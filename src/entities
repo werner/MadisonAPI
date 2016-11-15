@@ -4,3 +4,28 @@ User json sql=users
     created_at UTCTime Maybe
     updated_at UTCTime Maybe
     deriving Show
+
+Product json sql=products
+    code String
+    name String
+    description Text
+    product_type Int
+    userId UserId
+    created_at UTCTime Maybe
+    updated_at UTCTime Maybe
+    deriving Show
+
+Warehouse json sql=warehouses
+    name String
+    userId UserId
+    created_at UTCTime Maybe
+    updated_at UTCTime Maybe
+    deriving Show
+
+Stock json sql=stocks
+    warehouseId WarehouseId
+    productId ProductId
+    amount Double
+    created_at UTCTime Maybe
+    updated_at UTCTime Maybe
+    deriving Show

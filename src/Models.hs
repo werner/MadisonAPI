@@ -23,6 +23,7 @@ import           GHC.Generics         (Generic)
 
 
 import           Data.Time (UTCTime)
+import           Data.Text (Text)
 
 import           Config
 
