@@ -1,9 +1,7 @@
 {-# LANGUAGE DataKinds       #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators   #-}
-module Lib
-    ( startApp
-    ) where
+module Lib where
 
 import Data.Aeson
 import Data.Aeson.TH
@@ -19,18 +17,9 @@ data User = User
 
 $(deriveJSON defaultOptions ''User)
 
-type API = "users" :> Get '[JSON] [User]
+type UserAPI = "users" :> Get '[JSON] [User]
 
-startApp :: IO ()
-startApp = run 9090 app
-
-app :: Application
-app = serve api server
-
-api :: Proxy API
-api = Proxy
-
-server :: Server API
+server :: Server UserAPI
 server = return users
 
 users :: [User]

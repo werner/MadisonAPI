@@ -1,0 +1,6 @@
+User json sql=users
+    email String
+    password String
+    created_at UTCTime Maybe
+    updated_at UTCTime Maybe
+    deriving Show
