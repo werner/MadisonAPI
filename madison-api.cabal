@@ -1,13 +1,13 @@
 name:                madison-api
 version:             0.1.0.0
-synopsis:            Initial project template from stack
+synopsis:            Madison Erp API Backend
 description:         Please see README.md
-homepage:            https://github.com/githubuser/madison-api#readme
+homepage:            https://github.com/werner/MadisonAPI#readme
 license:             BSD3
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2016 Author name here
+author:              Werner Echezuria
+maintainer:          werner_a_e@yahoo.es
+copyright:           2016 Werner Echezuria
 category:            Web
 build-type:          Simple
 -- extra-source-files:
@@ -21,6 +21,12 @@ library
                      , servant-server
                      , wai
                      , warp
+                     , parsec
+                     , indents
+                     , persistent
+                     , persistent-postgresql
+                     , persistent-template
+                     , transformers
   default-language:    Haskell2010
 
 executable madison-api-exe
@@ -37,9 +43,14 @@ test-suite madison-api-test
   main-is:             Spec.hs
   build-depends:       base
                      , madison-api
+                     , hspec
+                     , containers
+                     , hspec-wai
+                     , hspec-wai-json
+                     , aeson
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
 source-repository head
   type:     git
-  location: https://github.com/githubuser/madison-api
+  location: https://github.com/werner/MadisonAPI
