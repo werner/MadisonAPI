@@ -16,13 +16,13 @@ import           Servant
 import           Config                      (App (..), Config (..))
 import           Models
 
-type UserAPI =
+type API =
          "users" :> Get '[JSON] [Entity User]
     :<|> "users" :> Capture "name" String :> Get '[JSON] (Entity User)
     :<|> "users" :> ReqBody '[JSON] User :> Post '[JSON] Int64
 
-userServer :: ServerT UserAPI App
-userServer = allUsers :<|> singleUser :<|> createUser
+server :: ServerT API App
+server = allUsers :<|> singleUser :<|> createUser
 
 allUsers :: App [Entity User]
 allUsers =

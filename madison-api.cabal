@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib, Config, Models, Api, Api.User
+  exposed-modules:     Config, Models, Api, Api.User, Api.Warehouse
                      , Formula.Evaluator, Formula.Parser, Formula.Types, Formula.Functions
   build-depends:       base >= 4.7 && < 5
                      , aeson
@@ -30,10 +30,12 @@ library
                      , parsec
                      , indents
                      , containers
-                     , persistent
-                     , persistent-postgresql
-                     , persistent-template
+                     , persistent            ==2.2.4.1
+                     , persistent-postgresql ==2.2.2
+                     , persistent-template   ==2.1.8.1
+                     , esqueleto             ==2.4.3
                      , transformers
+                     , vector
                      , time
                      , safe
                      , template-haskell

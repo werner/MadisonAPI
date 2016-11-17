@@ -2,7 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeOperators              #-}
 
-module Api (app) where
+module Api where
 
 import           Control.Monad.Except
 import           Control.Monad.Reader        (ReaderT, runReaderT)
@@ -16,25 +16,23 @@ import           Servant
 import           Config                      (App (..), Config (..))
 import           Models
 
-import           Api.User
+import qualified Api.User                    as UserApi
+import qualified Api.Warehouse               as WarehouseApi
 
-userApp :: Config -> Application
-userApp cfg = serve (Proxy :: Proxy UserAPI) (appToServer cfg)
+type API = UserApi.API :<|> WarehouseApi.API
 
-appToServer :: Config -> Server UserAPI
-appToServer cfg = enter (convertApp cfg) userServer
+server :: ServerT API App
+server = UserApi.server :<|> WarehouseApi.server
+
+appToServer :: Config -> Server API
+appToServer cfg = enter (convertApp cfg) server
 
 convertApp :: Config -> App :~> ExceptT ServantErr IO
 convertApp cfg = Nat (flip runReaderT cfg . runApp)
 
-files :: Application
-files = serveDirectory "assets"
-
-type AppAPI = UserAPI :<|> Raw
-
-appApi :: Proxy AppAPI
+appApi :: Proxy API
 appApi = Proxy
 
 app :: Config -> Application
 app cfg =
-    serve appApi (appToServer cfg :<|> files)
+    serve appApi (appToServer cfg)

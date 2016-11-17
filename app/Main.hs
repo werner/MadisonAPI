@@ -6,6 +6,7 @@ import           System.Environment          (lookupEnv)
 
 import           Api                         (app)
 import           Api.User                    
+import qualified Api.Warehouse               as WarehouseApi
 import           Config                      (Config (..), Environment (..),
                                               makePool, setLogger)
 import           Models                      (doMigrations)
