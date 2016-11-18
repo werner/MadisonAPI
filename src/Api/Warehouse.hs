@@ -37,7 +37,7 @@ data WarehouseStock = WarehouseStock { id     :: Int64
 instance ToJSON WarehouseStock
 
 type API = 
-             "warehouses" :> Get '[JSON] [WarehouseStock]
+             "warehouses" :> QueryParam "name" String                        :> Get    '[JSON] [WarehouseStock]
         :<|> "warehouses" :> Capture "id" Int64                              :> Get    '[JSON] (Entity Warehouse)
         :<|> "warehouses" :> ReqBody '[JSON] Warehouse                       :> Post   '[JSON] Int64
         :<|> "warehouses" :> Capture "id" Int64 :> ReqBody '[JSON] Warehouse :> Put    '[JSON] Int64
@@ -50,18 +50,22 @@ getWarehouse :: Maybe (Entity Warehouse) -> App (Entity Warehouse)
 getWarehouse Nothing           = throwError err404
 getWarehouse (Just warehouse') = return warehouse'
 
-findAll' :: App [RawWarehouseStock]
-findAll' = runDb 
-         $ E.select 
-         $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
-             E.on $ E.just (warehouses ^. WarehouseId) E.==. stocks ?. StockWarehouseId
-             E.groupBy $ (warehouses ^. WarehouseId, warehouses ^. WarehouseName, warehouses ^. WarehouseUserId)
-             return
-                 ( warehouses ^. WarehouseId
-                 , warehouses ^. WarehouseName 
-                 , warehouses ^. WarehouseUserId
-                 , E.sum_ (stocks ?. StockAmount)
-                 )
+findAll' :: Maybe String -> App [RawWarehouseStock]
+findAll' name = runDb 
+              $ E.select 
+              $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
+                  E.on $ E.just (warehouses ^. WarehouseId) E.==. stocks ?. StockWarehouseId
+                  E.groupBy $ (warehouses ^. WarehouseId,
+                               warehouses ^. WarehouseName,
+                               warehouses ^. WarehouseUserId)
+                  E.where_  $ (warehouses ^. WarehouseName `E.ilike`
+                               (E.%) E.++. (E.val $ fromMaybe "%" name) E.++. (E.%))
+                  return
+                      ( warehouses ^. WarehouseId
+                      , warehouses ^. WarehouseName 
+                      , warehouses ^. WarehouseUserId
+                      , E.sum_ (stocks ?. StockAmount)
+                      )
 
 transform' :: RawWarehouseStock -> WarehouseStock
 transform' warehouse = WarehouseStock (fromSqlKey $ E.unValue id) 
@@ -73,10 +77,10 @@ transform' warehouse = WarehouseStock (fromSqlKey $ E.unValue id)
 transformAll' :: [RawWarehouseStock] -> [WarehouseStock]
 transformAll' warehouses = Prelude.map (\w -> transform' w) warehouses
 
-all' :: App [WarehouseStock]
-all' = do
-    warehouses <- findAll'
-    return $ transformAll' warehouses
+all' :: Maybe String -> App [WarehouseStock]
+all' name = do
+        warehouses <- findAll' name
+        return $ transformAll' warehouses
 
 show' :: Int64 -> App (Entity Warehouse)
 show' id = do
