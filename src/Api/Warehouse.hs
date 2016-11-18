@@ -42,7 +42,9 @@ instance FromHttpApiData SortOrder where
 
 type API = 
              "warehouses" :> QueryParam "name"   String 
-                          :> QueryParam "order"  SortOrder                   :> Get    '[JSON] [WarehouseStock]
+                          :> QueryParam "order"  SortOrder                   
+                          :> QueryParam "limit"  Int64 
+                          :> QueryParam "offset" Int64                       :> Get    '[JSON] [WarehouseStock]
         :<|> "warehouses" :> Capture "id" Int64                              :> Get    '[JSON] (Entity Warehouse)
         :<|> "warehouses" :> ReqBody '[JSON] Warehouse                       :> Post   '[JSON] Int64
         :<|> "warehouses" :> Capture "id" Int64 :> ReqBody '[JSON] Warehouse :> Put    '[JSON] Int64
@@ -51,9 +53,9 @@ type API =
 server :: ServerT API App
 server = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
 
-all' :: Maybe String -> Maybe SortOrder -> App [WarehouseStock]
-all' name sortMethod = do
-        warehouses <- findAll' name sortMethod
+all' :: Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
+all' name sortMethod limit offset = do
+        warehouses <- findAll' name sortMethod limit offset
         return $ transformAll' warehouses
 
 show' :: Int64 -> App (Entity Warehouse)
@@ -91,8 +93,8 @@ getSortMethod (Just SAsc)  = E.asc
 getSortMethod (Just SDesc) = E.desc
 getSortMethod Nothing      = E.asc
 
-findAll' :: Maybe String -> Maybe SortOrder -> App [RawWarehouseStock]
-findAll' name sortMethod = runDb 
+findAll' :: Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [RawWarehouseStock]
+findAll' name sortMethod limit offset = runDb 
                         $ E.select 
                         $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
                             E.on $ E.just (warehouses ^. WarehouseId) E.==. stocks ?. StockWarehouseId
@@ -102,6 +104,8 @@ findAll' name sortMethod = runDb
                             E.groupBy $ (warehouses ^. WarehouseId,
                                          warehouses ^. WarehouseName,
                                          warehouses ^. WarehouseUserId)
+                            E.limit  $ fromMaybe 10 limit
+                            E.offset $ fromMaybe 0  offset
                             return
                                 ( warehouses ^. WarehouseId
                                 , warehouses ^. WarehouseName 
