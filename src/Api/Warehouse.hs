@@ -3,9 +3,11 @@
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances    #-}
-
+{-# LANGUAGE DeriveGeneric #-}
 module Api.Warehouse where
 
+
+import           GHC.Generics
 import           Data.Maybe
 import           Data.Aeson
 import           Data.Vector                 as V
@@ -22,22 +24,17 @@ import           Servant
 import           Config                      (App (..), Config (..))
 import           Models
 
+type RawWarehouseStock = ((E.Value (Key Warehouse)), (E.Value String), 
+                         (E.Value (Key User)), (E.Value (Maybe Double)))
 
-type WarehouseStock = ((E.Value (Key Warehouse)), (E.Value String), 
-                       (E.Value (Key User)), (E.Value (Maybe Double)))
+data WarehouseStock = WarehouseStock { id     :: Int64
+                                     , name   :: String
+                                     , userId :: Int64
+                                     , stock  :: Double
+                                     }
+                                     deriving (Show, Generic)
 
-instance ToJSON (E.Value (Key Warehouse)) where
-        toJSON (E.Value key) = Number $ fromIntegral $ fromSqlKey key
-
-instance ToJSON (E.Value String) where
-        toJSON (E.Value string) = String $ Text.pack string
-
-instance ToJSON (E.Value (Maybe Double)) where
-        toJSON (E.Value (Just double)) = Number $ fromRational $ toRational double
-        toJSON (E.Value Nothing)       = Number 0
-
-instance ToJSON (E.Value (Key User)) where
-        toJSON (E.Value key) = Number $ fromIntegral $ fromSqlKey key
+instance ToJSON WarehouseStock
 
 type API = 
              "warehouses" :> Get '[JSON] [WarehouseStock]
@@ -53,18 +50,33 @@ getWarehouse :: Maybe (Entity Warehouse) -> App (Entity Warehouse)
 getWarehouse Nothing           = throwError err404
 getWarehouse (Just warehouse') = return warehouse'
 
+findAll' :: App [RawWarehouseStock]
+findAll' = runDb 
+         $ E.select 
+         $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
+             E.on $ E.just (warehouses ^. WarehouseId) E.==. stocks ?. StockWarehouseId
+             E.groupBy $ (warehouses ^. WarehouseId, warehouses ^. WarehouseName, warehouses ^. WarehouseUserId)
+             return
+                 ( warehouses ^. WarehouseId
+                 , warehouses ^. WarehouseName 
+                 , warehouses ^. WarehouseUserId
+                 , E.sum_ (stocks ?. StockAmount)
+                 )
+
+transform' :: RawWarehouseStock -> WarehouseStock
+transform' warehouse = WarehouseStock (fromSqlKey $ E.unValue id) 
+                                     (E.unValue name)
+                                     (fromSqlKey $ E.unValue userId) 
+                                     (fromMaybe 0 $ E.unValue stock)
+                          where (id, name, userId, stock) = warehouse
+
+transformAll' :: [RawWarehouseStock] -> [WarehouseStock]
+transformAll' warehouses = Prelude.map (\w -> transform' w) warehouses
+
 all' :: App [WarehouseStock]
-all' = runDb 
-      $ E.select 
-      $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
-          E.on $ E.just (warehouses ^. WarehouseId) E.==. stocks ?. StockWarehouseId
-          E.groupBy $ (warehouses ^. WarehouseId, warehouses ^. WarehouseName, warehouses ^. WarehouseUserId)
-          return
-            ( warehouses ^. WarehouseId
-            , warehouses ^. WarehouseName 
-            , warehouses ^. WarehouseUserId
-            , E.sum_ (stocks ?. StockAmount)
-            )
+all' = do
+    warehouses <- findAll'
+    return $ transformAll' warehouses
 
 show' :: Int64 -> App (Entity Warehouse)
 show' id = do

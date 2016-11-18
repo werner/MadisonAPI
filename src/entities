@@ -1,31 +1,31 @@
 User json sql=users
     email String
     password String
-    created_at UTCTime Maybe
-    updated_at UTCTime Maybe
+    createdAt UTCTime Maybe
+    updatedAt UTCTime Maybe
     deriving Show
 
 Product json sql=products
-    code String
+    code String Maybe
     name String
-    description Text
+    description Text Maybe
     product_type Int
     userId UserId
-    created_at UTCTime Maybe
-    updated_at UTCTime Maybe
+    createdAt UTCTime Maybe
+    updatedAt UTCTime Maybe
     deriving Show
 
 Warehouse json sql=warehouses
     name String
     userId UserId
-    created_at UTCTime Maybe
-    updated_at UTCTime Maybe
+    createdAt UTCTime Maybe
+    updatedAt UTCTime Maybe
     deriving Show
 
 Stock json sql=stocks
     warehouseId WarehouseId
     productId ProductId
     amount Double
-    created_at UTCTime Maybe
-    updated_at UTCTime Maybe
+    createdAt UTCTime Maybe
+    updatedAt UTCTime Maybe
     deriving Show

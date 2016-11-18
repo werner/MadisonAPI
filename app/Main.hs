@@ -15,8 +15,8 @@ import           Safe                        (readMay)
 
 main :: IO ()
 main = do
-    env  <- lookupSetting "ENV" Development
-    port <- lookupSetting "PORT" 9090
+    env  <- lookupSetting "MADISON_ENV" Development
+    port <- lookupSetting "MADISON_PORT" 9090
     pool <- makePool env
     let cfg = Config { getPool = pool, getEnv = env }
         logger = setLogger env
