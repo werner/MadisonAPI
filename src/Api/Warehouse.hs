@@ -6,7 +6,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Api.Warehouse where
 
-
 import           GHC.Generics
 import           Data.Maybe
 import           Data.Aeson
@@ -27,17 +26,23 @@ import           Models
 type RawWarehouseStock = ((E.Value (Key Warehouse)), (E.Value String), 
                          (E.Value (Key User)), (E.Value (Maybe Double)))
 
-data WarehouseStock = WarehouseStock { id     :: Int64
-                                     , name   :: String
-                                     , userId :: Int64
-                                     , stock  :: Double
+data WarehouseStock = WarehouseStock { wId     :: Int64
+                                     , wName   :: String
+                                     , wUserId :: Int64
+                                     , wStock  :: Double
                                      }
                                      deriving (Show, Generic)
 
 instance ToJSON WarehouseStock
 
+data SortOrder = SAsc | SDesc deriving (Read, Show, Generic)
+
+instance FromHttpApiData SortOrder where
+        parseUrlPiece sortOrder = Right (read $ Text.unpack sortOrder :: SortOrder)
+
 type API = 
-             "warehouses" :> QueryParam "name" String                        :> Get    '[JSON] [WarehouseStock]
+             "warehouses" :> QueryParam "name"   String 
+                          :> QueryParam "order"  SortOrder                   :> Get    '[JSON] [WarehouseStock]
         :<|> "warehouses" :> Capture "id" Int64                              :> Get    '[JSON] (Entity Warehouse)
         :<|> "warehouses" :> ReqBody '[JSON] Warehouse                       :> Post   '[JSON] Int64
         :<|> "warehouses" :> Capture "id" Int64 :> ReqBody '[JSON] Warehouse :> Put    '[JSON] Int64
@@ -46,40 +51,9 @@ type API =
 server :: ServerT API App
 server = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
 
-getWarehouse :: Maybe (Entity Warehouse) -> App (Entity Warehouse)
-getWarehouse Nothing           = throwError err404
-getWarehouse (Just warehouse') = return warehouse'
-
-findAll' :: Maybe String -> App [RawWarehouseStock]
-findAll' name = runDb 
-              $ E.select 
-              $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
-                  E.on $ E.just (warehouses ^. WarehouseId) E.==. stocks ?. StockWarehouseId
-                  E.groupBy $ (warehouses ^. WarehouseId,
-                               warehouses ^. WarehouseName,
-                               warehouses ^. WarehouseUserId)
-                  E.where_  $ (warehouses ^. WarehouseName `E.ilike`
-                               (E.%) E.++. (E.val $ fromMaybe "%" name) E.++. (E.%))
-                  return
-                      ( warehouses ^. WarehouseId
-                      , warehouses ^. WarehouseName 
-                      , warehouses ^. WarehouseUserId
-                      , E.sum_ (stocks ?. StockAmount)
-                      )
-
-transform' :: RawWarehouseStock -> WarehouseStock
-transform' warehouse = WarehouseStock (fromSqlKey $ E.unValue id) 
-                                     (E.unValue name)
-                                     (fromSqlKey $ E.unValue userId) 
-                                     (fromMaybe 0 $ E.unValue stock)
-                          where (id, name, userId, stock) = warehouse
-
-transformAll' :: [RawWarehouseStock] -> [WarehouseStock]
-transformAll' warehouses = Prelude.map (\w -> transform' w) warehouses
-
-all' :: Maybe String -> App [WarehouseStock]
-all' name = do
-        warehouses <- findAll' name
+all' :: Maybe String -> Maybe SortOrder -> App [WarehouseStock]
+all' name sortMethod = do
+        warehouses <- findAll' name sortMethod
         return $ transformAll' warehouses
 
 show' :: Int64 -> App (Entity Warehouse)
@@ -107,3 +81,40 @@ delete' id = do
     let warehouseKey = entityKey warehouse'
     runDb $ P.delete warehouseKey
     return $ fromSqlKey warehouseKey
+
+getWarehouse :: Maybe (Entity Warehouse) -> App (Entity Warehouse)
+getWarehouse Nothing           = throwError err404
+getWarehouse (Just warehouse') = return warehouse'
+
+getSortMethod :: (PersistField t) => Maybe SortOrder -> (E.SqlExpr (E.Value t) -> E.SqlExpr E.OrderBy)
+getSortMethod (Just SAsc)  = E.asc
+getSortMethod (Just SDesc) = E.desc
+getSortMethod Nothing      = E.asc
+
+findAll' :: Maybe String -> Maybe SortOrder -> App [RawWarehouseStock]
+findAll' name sortMethod = runDb 
+                        $ E.select 
+                        $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
+                            E.on $ E.just (warehouses ^. WarehouseId) E.==. stocks ?. StockWarehouseId
+                            E.where_  $   (warehouses ^. WarehouseName `E.ilike`
+                                        (E.%) E.++. (E.val $ fromMaybe "%" name) E.++. (E.%))
+                            E.orderBy [getSortMethod sortMethod (warehouses ^. WarehouseName)]
+                            E.groupBy $ (warehouses ^. WarehouseId,
+                                         warehouses ^. WarehouseName,
+                                         warehouses ^. WarehouseUserId)
+                            return
+                                ( warehouses ^. WarehouseId
+                                , warehouses ^. WarehouseName 
+                                , warehouses ^. WarehouseUserId
+                                , E.sum_ (stocks ?. StockAmount)
+                                )
+
+transform' :: RawWarehouseStock -> WarehouseStock
+transform' warehouse = WarehouseStock (fromSqlKey $ E.unValue id) 
+                                     (E.unValue name)
+                                     (fromSqlKey $ E.unValue userId) 
+                                     (fromMaybe 0 $ E.unValue stock)
+                          where (id, name, userId, stock) = warehouse
+
+transformAll' :: [RawWarehouseStock] -> [WarehouseStock]
+transformAll' warehouses = Prelude.map (\w -> transform' w) warehouses
