@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -XPatternSynonyms #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 module Formula.Types where
 

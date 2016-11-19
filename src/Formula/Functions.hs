@@ -11,16 +11,16 @@ evaluateFunction (Function "product" args) = ResultDouble $ productFunction args
 evaluateFunction (Function "avg" args)     = ResultDouble $ avgFunction args
 
 maxFunction :: [AExpr] -> Double
-maxFunction = foldl (\acc x -> max acc $ numConst(x)) 0
+maxFunction = foldl (\acc x -> max acc $ numConst x) 0
 
 minFunction :: [AExpr] -> Double
-minFunction xs@(x:_) = foldl (\acc y -> min acc $ numConst(y)) (numConst(x)) xs
+minFunction xs@(x:_) = foldl (\acc y -> min acc $ numConst y) (numConst x) xs
 
 sumFunction :: [AExpr] -> Double
-sumFunction = foldl (\acc x -> acc + numConst(x)) 0
+sumFunction = foldl (\acc x -> acc + numConst x) 0
 
 productFunction :: [AExpr] -> Double
-productFunction = foldl (\acc x -> acc * numConst(x)) 1
+productFunction = foldl (\acc x -> acc * numConst x) 1
 
 avgFunction :: [AExpr] -> Double
 avgFunction xs = sumFunction xs / fromIntegral(length xs)

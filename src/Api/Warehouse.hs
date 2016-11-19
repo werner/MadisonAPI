@@ -23,8 +23,8 @@ import           Servant
 import           Config                      (App (..), Config (..))
 import           Models
 
-type RawWarehouseStock = ((E.Value (Key Warehouse)), (E.Value String), 
-                         (E.Value (Key User)), (E.Value (Maybe Double)))
+type RawWarehouseStock = (E.Value (Key Warehouse), E.Value String, 
+                          E.Value (Key User), E.Value (Maybe Double))
 
 data WarehouseStock = WarehouseStock { wId     :: Int64
                                      , wName   :: String
@@ -70,19 +70,21 @@ insert' warehouse = do
 
 update' :: Int64 -> Warehouse -> App Int64
 update' id warehouse = do
-    maybeWarehouse   <- runDb (selectFirst [ WarehouseId P.==. toSqlKey id] [])
-    warehouse'       <- getWarehouse maybeWarehouse
-    let warehouseKey = entityKey warehouse'
+    warehouseKey <- getKeyFromId id
     runDb $ P.update warehouseKey [WarehouseName =. warehouseName warehouse]
     return $ fromSqlKey warehouseKey
 
 delete' :: Int64 -> App Int64
 delete' id = do
-    maybeWarehouse   <- runDb (selectFirst [ WarehouseId P.==. toSqlKey id] [])
-    warehouse'       <- getWarehouse maybeWarehouse
-    let warehouseKey = entityKey warehouse'
+    warehouseKey <- getKeyFromId id
     runDb $ P.delete warehouseKey
     return $ fromSqlKey warehouseKey
+
+getKeyFromId :: Int64 -> App (Key Warehouse)
+getKeyFromId id = do
+    maybeWarehouse   <- runDb (selectFirst [ WarehouseId P.==. toSqlKey id] [])
+    warehouse'       <- getWarehouse maybeWarehouse
+    return $ entityKey warehouse'
 
 getWarehouse :: Maybe (Entity Warehouse) -> App (Entity Warehouse)
 getWarehouse Nothing           = throwError err404
@@ -98,12 +100,12 @@ findAll' name sortMethod limit offset = runDb
                         $ E.select 
                         $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
                             E.on $ E.just (warehouses ^. WarehouseId) E.==. stocks ?. StockWarehouseId
-                            E.where_  $   (warehouses ^. WarehouseName `E.ilike`
-                                        (E.%) E.++. (E.val $ fromMaybe "%" name) E.++. (E.%))
+                            E.where_  $ warehouses ^. WarehouseName `E.ilike`
+                                        (E.%) E.++. E.val (fromMaybe "%" name) E.++. (E.%)
                             E.orderBy [getSortMethod sortMethod (warehouses ^. WarehouseName)]
-                            E.groupBy $ (warehouses ^. WarehouseId,
-                                         warehouses ^. WarehouseName,
-                                         warehouses ^. WarehouseUserId)
+                            E.groupBy (warehouses ^. WarehouseId,
+                                       warehouses ^. WarehouseName,
+                                       warehouses ^. WarehouseUserId)
                             E.limit  $ fromMaybe 10 limit
                             E.offset $ fromMaybe 0  offset
                             return
@@ -115,10 +117,10 @@ findAll' name sortMethod limit offset = runDb
 
 transform' :: RawWarehouseStock -> WarehouseStock
 transform' warehouse = WarehouseStock (fromSqlKey $ E.unValue id) 
-                                     (E.unValue name)
-                                     (fromSqlKey $ E.unValue userId) 
-                                     (fromMaybe 0 $ E.unValue stock)
+                                      (E.unValue name)
+                                      (fromSqlKey $ E.unValue userId) 
+                                      (fromMaybe 0 $ E.unValue stock)
                           where (id, name, userId, stock) = warehouse
 
 transformAll' :: [RawWarehouseStock] -> [WarehouseStock]
-transformAll' warehouses = Prelude.map (\w -> transform' w) warehouses
+transformAll' = Prelude.map transform'

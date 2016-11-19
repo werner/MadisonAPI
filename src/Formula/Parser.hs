@@ -55,7 +55,7 @@ statement = parens statement
           <|> sequenceOfStmt
 
 sequenceOfStmt =
-  do list <- (sepBy1 statement' semi)
+  do list <- sepBy1 statement' semi
      return $ head list
 
 statement' :: Parser Stmt
@@ -109,7 +109,7 @@ aExpression = buildExpressionParser aOperators aTerm
 bExpression :: Parser BExpr
 bExpression = buildExpressionParser bOperators bTerm
 
-aOperators = [ [Prefix (reservedOp "-"   >> return (Neg                     ))          ]
+aOperators = [ [Prefix (reservedOp "-"   >> return  Neg                     )          ]
              , [Infix  (reservedOp "^"   >> return (ABinary Power           )) AssocLeft]
              , [Infix  (reservedOp "*"   >> return (ABinary Multiply        )) AssocLeft,
                 Infix  (reservedOp "/"   >> return (ABinary Divide          )) AssocLeft]
@@ -117,14 +117,14 @@ aOperators = [ [Prefix (reservedOp "-"   >> return (Neg                     ))  
                 Infix  (reservedOp "-"   >> return (ABinary Subtract        )) AssocLeft]
               ]
 
-bOperators = [ [Prefix (reservedOp "not" >> return (Not             ))          ]
+bOperators = [ [Prefix (reservedOp "not" >> return  Not             )          ]
              , [Infix  (reservedOp "and" >> return (BBinary And     )) AssocLeft,
                 Infix  (reservedOp "or"  >> return (BBinary Or      )) AssocLeft]
              ]
 
 aTerm =  parens aExpression
-     <|> liftM Var identifier
-     <|> liftM NumConst number
+     <|> fmap Var identifier
+     <|> fmap NumConst number
 
 bTerm =  parens bExpression
      <|> (reserved "true"  >> return (BoolConst True ))

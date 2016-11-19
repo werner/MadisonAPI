@@ -10,10 +10,10 @@ import qualified Data.Map as M
 
 printStmt :: Stmt -> SymTab ->  String
 printStmt statement vars = 
-    case (evaluateStmt statement vars) of
-      ResultDouble double      -> show(double)
-      ResultBool bool          -> show(bool)
-      ResultSymTab (_, symTab) -> show(symTab)
+    case evaluateStmt statement vars of
+      ResultDouble double      -> show double
+      ResultBool bool          -> show bool
+      ResultSymTab (_, symTab) -> show symTab
 
 evaluateStmt :: Stmt -> SymTab -> ResultStmt
 evaluateStmt statement vars =
@@ -58,7 +58,7 @@ lookUp :: String -> SymTab -> (Double, SymTab)
 lookUp str symTab = 
     case M.lookup str symTab of
       Just v -> (v, symTab)
-      Nothing -> throw(VariableNotFound $ str)
+      Nothing -> throw(VariableNotFound str)
 
 addSymbol :: String -> Double -> SymTab -> ((), SymTab)
 addSymbol str val symTab = 
