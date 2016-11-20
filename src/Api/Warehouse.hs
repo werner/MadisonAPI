@@ -19,6 +19,7 @@ import qualified Database.Esqueleto          as E
 import           Database.Esqueleto          ((^.), (?.))
 import           Network.Wai                 (Application)
 import           Servant
+import           Web.HttpApiData
 
 import           Config                      (App (..), Config (..))
 import           Models
@@ -31,14 +32,18 @@ data WarehouseStock = WarehouseStock { wId     :: Int64
                                      , wUserId :: Int64
                                      , wStock  :: Double
                                      }
-                                     deriving (Show, Generic)
+                                     deriving (Eq, Show, Read, Generic)
 
 instance ToJSON WarehouseStock
+instance FromJSON WarehouseStock
 
 data SortOrder = SAsc | SDesc deriving (Read, Show, Generic)
 
 instance FromHttpApiData SortOrder where
         parseUrlPiece sortOrder = Right (read $ Text.unpack sortOrder :: SortOrder)
+
+instance ToHttpApiData SortOrder where
+        toUrlPiece = showTextData
 
 type API = 
              "warehouses" :> QueryParam "name"   String 

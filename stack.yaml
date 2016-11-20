@@ -7,4 +7,5 @@ extra-deps:
 - persistent-2.2.4.1
 - persistent-postgresql-2.2.2
 - persistent-template-2.1.8.1
+- persistent-sqlite-2.2.1
 resolver: lts-7.9
