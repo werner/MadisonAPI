@@ -9,21 +9,22 @@ module Api.Warehouse where
 import           GHC.Generics
 import           Data.Maybe
 import           Data.Aeson
-import           Data.Vector                 as V
-import           Data.Text                   as Text
-import           Data.Int                    (Int64)
-import           Database.Persist.Postgresql as P
-import           Database.Persist.Postgresql (Entity (..), fromSqlKey, insert, toSqlKey, update,
-                                              delete, selectFirst, selectList, (==.), (=.))
-import qualified Database.Esqueleto          as E
-import           Database.Esqueleto          ((^.), (?.))
-import           Network.Wai                 (Application)
+import           Data.Vector                      as V
+import           Data.Text                        as Text
+import           Data.Int                         (Int64)
+import           Database.Persist.Postgresql      as P
+import           Database.Persist.Postgresql      (Entity (..), fromSqlKey, insert, toSqlKey, update,
+                                                   delete, selectFirst, selectList, (==.), (=.))
+import qualified Database.Esqueleto               as E
+import           Database.Esqueleto               ((^.), (?.))
+import           Network.Wai                      (Application)
 import           Servant
 import           Web.HttpApiData
 
-import           Config                      (App (..), Config (..))
+import           Config                           (App (..), Config (..))
 import           Models
-import qualified Api.User                     as ApiUser
+import qualified Api.User                         as ApiUser
+import qualified Api.Register                     as Register
 
 type RawWarehouseStock = (E.Value (Key Warehouse), E.Value String, 
                           E.Value (Key User), E.Value (Maybe Double))
@@ -52,7 +53,8 @@ instance ToHttpApiData SortOrder where
         toUrlPiece = showTextData
 
 type API = 
-             "warehouses" :> QueryParam "name"   String 
+             "warehouses" :> BasicAuth "auth-realm" Register.AuthUser
+                          :> QueryParam "name"   String 
                           :> QueryParam "order"  SortOrder                   
                           :> QueryParam "limit"  Int64 
                           :> QueryParam "offset" Int64      :> Get    '[JSON] [WarehouseStock]
@@ -65,8 +67,8 @@ type API =
 server :: ServerT API App
 server = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
 
-all' :: Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
-all' name sortMethod limit offset = do
+all' :: Register.AuthUser -> Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
+all' user name sortMethod limit offset = do
         warehouses <- findAll' name sortMethod limit offset
         return $ transformAll' warehouses
 

@@ -47,6 +47,9 @@ spec = with appSpec $ do
         it "list warehouses" $ do
           get (C.pack "/warehouses") `shouldRespondWith` [json|[]|]
 
+        it "creates a warehouse" $ do
+          userId' <- createUser
+          postJson (C.pack "/warehouses") (WarehouseStock 0 "Second" userId' 0.0) `shouldRespondWith` 201
 
 serverSpec :: ServerT Api.Warehouse.API App
 serverSpec = Api.Warehouse.server
