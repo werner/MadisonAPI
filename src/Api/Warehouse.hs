@@ -3,7 +3,7 @@
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric        #-}
 module Api.Warehouse where
 
 import           GHC.Generics
@@ -23,6 +23,7 @@ import           Web.HttpApiData
 
 import           Config                      (App (..), Config (..))
 import           Models
+import qualified Api.User                     as ApiUser
 
 type RawWarehouseStock = (E.Value (Key Warehouse), E.Value String, 
                           E.Value (Key User), E.Value (Maybe Double))
@@ -34,8 +35,13 @@ data WarehouseStock = WarehouseStock { wId     :: Int64
                                      }
                                      deriving (Eq, Show, Read, Generic)
 
+data CrudWarehouse = CrudWarehouse { cwName :: String } deriving (Eq, Show, Read, Generic)
+
 instance ToJSON WarehouseStock
 instance FromJSON WarehouseStock
+
+instance ToJSON CrudWarehouse
+instance FromJSON CrudWarehouse
 
 data SortOrder = SAsc | SDesc deriving (Read, Show, Generic)
 
@@ -49,11 +55,12 @@ type API =
              "warehouses" :> QueryParam "name"   String 
                           :> QueryParam "order"  SortOrder                   
                           :> QueryParam "limit"  Int64 
-                          :> QueryParam "offset" Int64                       :> Get    '[JSON] [WarehouseStock]
-        :<|> "warehouses" :> Capture "id" Int64                              :> Get    '[JSON] (Entity Warehouse)
-        :<|> "warehouses" :> ReqBody '[JSON] Warehouse                       :> Post   '[JSON] Int64
-        :<|> "warehouses" :> Capture "id" Int64 :> ReqBody '[JSON] Warehouse :> Put    '[JSON] Int64
-        :<|> "warehouses" :> Capture "id" Int64                              :> Delete '[JSON] Int64
+                          :> QueryParam "offset" Int64      :> Get    '[JSON] [WarehouseStock]
+        :<|> "warehouses" :> Capture "id" Int64             :> Get    '[JSON] (Entity Warehouse)
+        :<|> "warehouses" :> ReqBody '[JSON] CrudWarehouse  :> Post   '[JSON] Int64
+        :<|> "warehouses" :> Capture "id" Int64 
+                          :> ReqBody '[JSON] CrudWarehouse  :> Put    '[JSON] Int64
+        :<|> "warehouses" :> Capture "id" Int64             :> Delete '[JSON] Int64
 
 server :: ServerT API App
 server = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
@@ -68,15 +75,16 @@ show' id = do
     maybeWarehouse <- runDb (selectFirst [ WarehouseId P.==. toSqlKey id] [])
     getWarehouse maybeWarehouse
 
-insert' :: Warehouse -> App Int64
-insert' warehouse = do
-    new <- runDb $ P.insert $ Warehouse (warehouseName warehouse) (warehouseUserId warehouse) Nothing Nothing
+insert' :: CrudWarehouse -> App Int64
+insert' crudWarehouse = do
+    user <- runDb (selectFirst [] []) >>= ApiUser.getUser
+    new  <- runDb $ P.insert $ Warehouse (cwName crudWarehouse) (entityKey user) Nothing Nothing
     return $ fromSqlKey new
 
-update' :: Int64 -> Warehouse -> App Int64
+update' :: Int64 -> CrudWarehouse -> App Int64
 update' id warehouse = do
     warehouseKey <- getKeyFromId id
-    runDb $ P.update warehouseKey [WarehouseName =. warehouseName warehouse]
+    runDb $ P.update warehouseKey [WarehouseName =. cwName warehouse]
     return $ fromSqlKey warehouseKey
 
 delete' :: Int64 -> App Int64
@@ -87,8 +95,7 @@ delete' id = do
 
 getKeyFromId :: Int64 -> App (Key Warehouse)
 getKeyFromId id = do
-    maybeWarehouse   <- runDb (selectFirst [ WarehouseId P.==. toSqlKey id] [])
-    warehouse'       <- getWarehouse maybeWarehouse
+    warehouse' <- runDb (selectFirst [ WarehouseId P.==. toSqlKey id] []) >>= getWarehouse
     return $ entityKey warehouse'
 
 getWarehouse :: Maybe (Entity Warehouse) -> App (Entity Warehouse)

@@ -22,6 +22,7 @@ library
                      , servant-server
                      , wai
                      , wai-extra
+                     , case-insensitive 
                      , mtl
                      , warp
                      , http-api-data 
@@ -35,6 +36,7 @@ library
                      , persistent-postgresql ==2.2.2
                      , persistent-template   ==2.1.8.1
                      , esqueleto             ==2.4.3
+                     , postgresql-simple
                      , monad-logger
                      , transformers
                      , vector
@@ -79,6 +81,8 @@ test-suite madison-api-test
                      , transformers
                      , safe
                      , wai
+                     , wai-extra
+                     , case-insensitive 
                      , warp
                      , servant
                      , servant-client
@@ -87,6 +91,7 @@ test-suite madison-api-test
                      , http-types
                      , http-api-data 
                      , text
+                     , mtl
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 

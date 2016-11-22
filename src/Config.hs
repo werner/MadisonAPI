@@ -8,7 +8,7 @@ import           Control.Monad.Except                 (ExceptT, MonadError)
 import           Control.Monad.Logger                 (runNoLoggingT,
                                                        runStdoutLoggingT)
 import           Control.Monad.Reader                 (MonadIO, MonadReader,
-                                                       ReaderT)
+                                                       ReaderT, runReaderT)
 import           Control.Monad.Trans.Maybe            (MaybeT (..), runMaybeT)
 import qualified Data.ByteString.Char8                as BS
 import           Data.Monoid                          ((<>))
@@ -46,7 +46,7 @@ setLogger Production = logStdout
 
 makePool :: Environment -> IO ConnectionPool
 makePool Test =
-    runNoLoggingT (createPostgresqlPool (connStr "test") (envPool Test))
+    runNoLoggingT (createPostgresqlPool (connStr "_test") (envPool Test))
 makePool Development =
     runStdoutLoggingT (createPostgresqlPool (connStr "") (envPool Development))
 makePool Production = do
@@ -57,11 +57,11 @@ makePool Production = do
                    , "password="
                    , "dbname="
                    ]
-            envs = [ "PGHOST"
-                   , "PGPORT"
-                   , "PGUSER"
-                   , "PGPASS"
-                   , "PGDATABASE"
+            envs = [ "MADISON_PGHOST"
+                   , "MADISON_PGPORT"
+                   , "MADISON_PGUSER"
+                   , "MADISON_PGPASS"
+                   , "MADISON_PGDATABASE"
                    ]
         envVars <- traverse (MaybeT . lookupEnv) envs
         let prodStr = mconcat . zipWith (<>) keys $ BS.pack <$> envVars

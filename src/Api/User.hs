@@ -1,5 +1,7 @@
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 
 module Api.User where
 
@@ -40,3 +42,7 @@ createUser :: User -> App Int64
 createUser p = do
     newUser <- runDb $ insert $ User (userEmail p) (userPassword p) Nothing Nothing
     return $ fromSqlKey newUser
+
+getUser :: Maybe (Entity User) -> App (Entity User)
+getUser Nothing      = throwError err404
+getUser (Just user') = return user'
