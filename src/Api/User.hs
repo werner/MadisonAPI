@@ -20,6 +20,7 @@ import           Servant
 
 import           Config                      (App (..), Config (..))
 import           Models
+import qualified Api.Register                as Register
 
 data ShowUser = ShowUser { suId :: Int64
                          , suEmail :: String } deriving (Show, Read, Generic)
@@ -31,8 +32,8 @@ type API =
          "users" :> Get '[JSON] [ShowUser]
     :<|> "users" :> Capture "email" String :> Get '[JSON] ShowUser
 
-server :: ServerT API App
-server = allUsers :<|> singleUser
+server :: Register.AuthUser -> ServerT API App
+server user = allUsers :<|> singleUser
 
 allUsers :: App [ShowUser]
 allUsers =

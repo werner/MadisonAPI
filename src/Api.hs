@@ -34,7 +34,9 @@ import qualified Api.User                    as UserApi
 import qualified Api.Warehouse               as WarehouseApi
 import qualified Api.Register                as Register
 
-type API = Register.API :<|> UserApi.API :<|> WarehouseApi.API
+type API = Register.API 
+       :<|> BasicAuth "auth-realm" Register.AuthUser :> UserApi.API
+       :<|> BasicAuth "auth-realm" Register.AuthUser :> WarehouseApi.API
 
 server :: ServerT API App
 server = Register.server :<|> UserApi.server :<|> WarehouseApi.server

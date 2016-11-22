@@ -53,8 +53,7 @@ instance ToHttpApiData SortOrder where
         toUrlPiece = showTextData
 
 type API = 
-             "warehouses" :> BasicAuth "auth-realm" Register.AuthUser
-                          :> QueryParam "name"   String 
+             "warehouses" :> QueryParam "name"   String 
                           :> QueryParam "order"  SortOrder                   
                           :> QueryParam "limit"  Int64 
                           :> QueryParam "offset" Int64      :> Get    '[JSON] [WarehouseStock]
@@ -64,11 +63,11 @@ type API =
                           :> ReqBody '[JSON] CrudWarehouse  :> Put    '[JSON] Int64
         :<|> "warehouses" :> Capture "id" Int64             :> Delete '[JSON] Int64
 
-server :: ServerT API App
-server = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
+server :: Register.AuthUser -> ServerT API App
+server user = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
 
-all' :: Register.AuthUser -> Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
-all' user name sortMethod limit offset = do
+all' :: Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
+all' name sortMethod limit offset = do
         warehouses <- findAll' name sortMethod limit offset
         return $ transformAll' warehouses
 
