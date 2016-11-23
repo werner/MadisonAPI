@@ -53,43 +53,48 @@ instance ToHttpApiData SortOrder where
         toUrlPiece = showTextData
 
 type API = 
-             "warehouses" :> QueryParam "name"   String 
+             "warehouses" :> BasicAuth "auth-realm" Register.AuthUser 
+                          :> QueryParam "name"   String 
                           :> QueryParam "order"  SortOrder                   
                           :> QueryParam "limit"  Int64 
-                          :> QueryParam "offset" Int64      :> Get    '[JSON] [WarehouseStock]
-        :<|> "warehouses" :> Capture "id" Int64             :> Get    '[JSON] (Entity Warehouse)
-        :<|> "warehouses" :> ReqBody '[JSON] CrudWarehouse  :> Post   '[JSON] Int64
-        :<|> "warehouses" :> Capture "id" Int64 
-                          :> ReqBody '[JSON] CrudWarehouse  :> Put    '[JSON] Int64
-        :<|> "warehouses" :> Capture "id" Int64             :> Delete '[JSON] Int64
+                          :> QueryParam "offset" Int64                 :> Get    '[JSON] [WarehouseStock]
+        :<|> "warehouses" :> BasicAuth "auth-realm" Register.AuthUser 
+                          :> Capture "id" Int64                        :> Get    '[JSON] (Entity Warehouse)
+        :<|> "warehouses" :> BasicAuth "auth-realm" Register.AuthUser
+                          :> ReqBody '[JSON] CrudWarehouse             :> Post   '[JSON] Int64
+        :<|> "warehouses" :> BasicAuth "auth-realm" Register.AuthUser
+                          :> Capture "id" Int64 
+                          :> ReqBody '[JSON] CrudWarehouse             :> Put    '[JSON] Int64
+        :<|> "warehouses" :> BasicAuth "auth-realm" Register.AuthUser
+                          :> Capture "id" Int64                        :> Delete '[JSON] Int64
 
-server :: Register.AuthUser -> ServerT API App
-server user = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
+server :: ServerT API App
+server = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
 
-all' :: Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
-all' name sortMethod limit offset = do
+all' :: Register.AuthUser -> Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
+all' user name sortMethod limit offset = do
         warehouses <- findAll' name sortMethod limit offset
         return $ transformAll' warehouses
 
-show' :: Int64 -> App (Entity Warehouse)
-show' id = do
+show' :: Register.AuthUser -> Int64 -> App (Entity Warehouse)
+show' user id = do
     maybeWarehouse <- runDb (selectFirst [ WarehouseId P.==. toSqlKey id] [])
     getWarehouse maybeWarehouse
 
-insert' :: CrudWarehouse -> App Int64
-insert' crudWarehouse = do
+insert' :: Register.AuthUser -> CrudWarehouse -> App Int64
+insert' user crudWarehouse = do
     user <- runDb (selectFirst [] []) >>= ApiUser.getUser
     new  <- runDb $ P.insert $ Warehouse (cwName crudWarehouse) (entityKey user) Nothing Nothing
     return $ fromSqlKey new
 
-update' :: Int64 -> CrudWarehouse -> App Int64
-update' id warehouse = do
+update' :: Register.AuthUser -> Int64 -> CrudWarehouse -> App Int64
+update' user id warehouse = do
     warehouseKey <- getKeyFromId id
     runDb $ P.update warehouseKey [WarehouseName =. cwName warehouse]
     return $ fromSqlKey warehouseKey
 
-delete' :: Int64 -> App Int64
-delete' id = do
+delete' :: Register.AuthUser -> Int64 -> App Int64
+delete' user id = do
     warehouseKey <- getKeyFromId id
     runDb $ P.delete warehouseKey
     return $ fromSqlKey warehouseKey

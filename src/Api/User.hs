@@ -29,20 +29,21 @@ instance ToJSON ShowUser
 instance FromJSON ShowUser
 
 type API =
-         "users" :> Get '[JSON] [ShowUser]
-    :<|> "users" :> Capture "email" String :> Get '[JSON] ShowUser
+         "users" :> BasicAuth "auth-realm" Register.AuthUser :> Get '[JSON] [ShowUser]
+    :<|> "users" :> BasicAuth "auth-realm" Register.AuthUser 
+                 :> Capture "email" String                   :> Get '[JSON] ShowUser
 
-server :: Register.AuthUser -> ServerT API App
-server user = allUsers :<|> singleUser
+server :: ServerT API App
+server = allUsers :<|> singleUser
 
-allUsers :: App [ShowUser]
-allUsers =
+allUsers :: Register.AuthUser -> App [ShowUser]
+allUsers user =
     (\user -> (\user' -> ShowUser (fromSqlKey $ entityKey user') 
                                   (userEmail $ entityVal user')) <$> user)
     <$> (runDb $ selectList [] [])
 
-singleUser :: String -> App ShowUser
-singleUser str = do
+singleUser :: Register.AuthUser -> String -> App ShowUser
+singleUser user str = do
     maybeUser <- runDb (selectFirst [UserEmail ==. str] [])
     case maybeUser of
          Nothing ->

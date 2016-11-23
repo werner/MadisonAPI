@@ -1,4 +1,6 @@
+{-# LANGUAGE DataKinds                  #-}
 {-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE TypeOperators              #-}
 module Api.WarehouseSpec (main, spec) where
 
 import qualified Data.ByteString.Char8      as C
@@ -15,6 +17,8 @@ import           Network.Wai                 (Application)
 import           Network.Wai.Handler.Warp
 import           Network.Wai.Test            (SResponse)
 import           Servant
+import           Servant.Server              (BasicAuthCheck (BasicAuthCheck), 
+                                              serveWithContext, Context, Context ((:.), EmptyContext))
 import           Servant.Client
 import qualified Database.Persist.Postgresql as P
 import           Data.Text                   (Text)
@@ -27,12 +31,13 @@ import           Models
 import           Api
 import qualified Api.User                     as ApiUser
 import           Api.Warehouse
+import           Api.Register
 
-getAll       :: Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> Manager -> BaseUrl -> ClientM [WarehouseStock]
-getShow      :: Int64 -> Manager -> BaseUrl -> ClientM (P.Entity Warehouse)
-postInsert   :: CrudWarehouse -> Manager -> BaseUrl -> ClientM Int64
-putUpdate    :: Int64 -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int64
-deleteDelete :: Int64 -> Manager -> BaseUrl -> ClientM Int64
+getAll       :: BasicAuthData -> Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> Manager -> BaseUrl -> ClientM [WarehouseStock]
+getShow      :: BasicAuthData -> Int64 -> Manager -> BaseUrl -> ClientM (P.Entity Warehouse)
+postInsert   :: BasicAuthData -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int64
+putUpdate    :: BasicAuthData -> Int64 -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int64
+deleteDelete :: BasicAuthData -> Int64 -> Manager -> BaseUrl -> ClientM Int64
 getAll :<|> getShow :<|> postInsert :<|> putUpdate :<|> deleteDelete = client apiSpec
 
 apiSpec :: Proxy Api.Warehouse.API
@@ -45,24 +50,30 @@ spec :: Spec
 spec = with appSpec $ do
     describe "/warehouses" $ do
         it "list warehouses" $ do
-          get (C.pack "/warehouses") `shouldRespondWith` [json|[]|]
+          get (C.pack "/warehouses") `shouldRespondWith` [json|[]|] 
+                            {matchHeaders = [(CI.mk (C.pack "WWW-Authenticate")) <:> (C.pack "Basic realm='auth-realm'")]}
 
-        it "creates a warehouse" $ do
-          userId' <- createUser
-          postJson (C.pack "/warehouses") (WarehouseStock 0 "Second" userId' 0.0) `shouldRespondWith` 201
+--        it "creates a warehouse" $ do
+--          userId' <- createUser
+--          postJson (C.pack "/warehouses") (WarehouseStock 0 "Second" userId' 0.0) `shouldRespondWith` 201
 
-serverSpec :: ServerT Api.Warehouse.API App
+type APISpec = Api.Warehouse.API
+
+serverSpec :: ServerT APISpec App
 serverSpec = Api.Warehouse.server
 
-appToServerSpec :: Config -> Server Api.Warehouse.API
+appToServerSpec :: Config -> Server APISpec
 appToServerSpec cfg = enter (convertApp cfg) serverSpec
+
+authServerContextSpec :: Context (BasicAuthCheck AuthUser ': '[])
+authServerContextSpec = authCheck :. EmptyContext
 
 appSpec :: IO Application
 appSpec = do
     pool <- makePool Test
     let cfg = Config { getPool = pool, getEnv = Test }
     P.runSqlPool doMigrations pool
-    return $ serve apiSpec (appToServerSpec cfg)
+    return $ serveWithContext apiSpec authServerContextSpec (appToServerSpec cfg)
 
 postJson :: (ToJSON a) => ByteString -> a -> WaiSession SResponse
 postJson path =
@@ -71,8 +82,8 @@ postJson path =
 createUser :: App Int64
 createUser = do
         let user = User "test@test.com" "12345" Nothing Nothing
-        id <- ApiUser.createUser user
-        return id 
+        id <- register user
+        return $ auId id 
 
 builtWarehouse :: App WarehouseStock
 builtWarehouse = do
