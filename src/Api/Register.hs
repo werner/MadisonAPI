@@ -10,6 +10,7 @@ import           GHC.Generics
 import           Data.Aeson
 import           Data.Int                    (Int64)
 import qualified Data.ByteString.Char8       as C
+
 import           Servant
 import           Servant.Server              (BasicAuthCheck (BasicAuthCheck),
                                               BasicAuthResult( Authorized
@@ -41,10 +42,11 @@ register user = do
         user' <- runDb $ insert $ User (userEmail user) (userPassword user) Nothing Nothing
         return $ AuthUser (fromSqlKey user') (userEmail user)
 
-authCheck :: BasicAuthCheck AuthUser
-authCheck =
-  let check (BasicAuthData username password) =
-        if username == (C.pack "servant") && password == (C.pack "server")
-        then return $ Authorized $ AuthUser 1 "servant"
-        else return Unauthorized
-  in BasicAuthCheck check
+authCheck :: User -> App AuthUser
+authCheck user = do
+    maybeUser <- runDb (selectFirst [UserEmail ==. userEmail user] [])
+    case maybeUser of
+         Nothing ->
+            throwError $ err403 { errReasonPhrase = "Invalid Cookie" }
+         Just user ->
+            return $ AuthUser (fromSqlKey $ entityKey user) (userEmail $ entityVal user)
