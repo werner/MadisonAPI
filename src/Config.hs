@@ -77,3 +77,29 @@ envPool Production = 8
 
 connStr :: BS.ByteString -> ConnectionString
 connStr sfx = "host=localhost dbname=madison" <> sfx <> " user=madison password=madison port=5432"
+
+lookupSetting :: Read a => String -> a -> IO a
+lookupSetting env def = do
+    maybeValue <- lookupEnv env
+    case maybeValue of
+        Nothing ->
+            return def
+        Just str ->
+            maybe (handleFailedRead str) return (readMay str)
+  where
+    handleFailedRead str =
+        error $ mconcat
+            [ "Failed to read [["
+            , str
+            , "]] for environment variable "
+            , env
+            ]
+
+getConfig :: IO Config
+getConfig = do
+    env  <- lookupSetting "MADISON_ENV" Development
+    pool <- makePool env
+    return $ Config { getPool = pool, getEnv = env }
+
+getPort :: IO Int
+getPort = lookupSetting "MADISON_PORT" 9090

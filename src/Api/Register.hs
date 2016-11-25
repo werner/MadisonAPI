@@ -1,8 +1,8 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE TypeOperators         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric     #-}
 
 module Api.Register where
 
@@ -25,28 +25,17 @@ import           Database.Persist.Postgresql (Entity (..), fromSqlKey, insert,
 
 import           Config                      (App (..), Config (..))
 import           Models
+import qualified Api.User                    as ApiUser
 
 data AuthUser = AuthUser { auId    :: Int64
                          , auEmail :: String } deriving (Eq, Show, Read, Generic)
 
-instance ToJSON AuthUser
-instance FromJSON AuthUser
-
-type API = "register" :> ReqBody '[JSON] User :> Post '[JSON] AuthUser
+type API = "register" :> ReqBody '[JSON] User :> Post '[JSON] ApiUser.ShowUser
 
 server :: ServerT API App
 server = register
 
-register :: User -> App AuthUser
+register :: User -> App ApiUser.ShowUser
 register user = do
         user' <- runDb $ insert $ User (userEmail user) (userPassword user) Nothing Nothing
-        return $ AuthUser (fromSqlKey user') (userEmail user)
-
-authCheck :: User -> App AuthUser
-authCheck user = do
-    maybeUser <- runDb (selectFirst [UserEmail ==. userEmail user] [])
-    case maybeUser of
-         Nothing ->
-            throwError $ err403 { errReasonPhrase = "Invalid Cookie" }
-         Just user ->
-            return $ AuthUser (fromSqlKey $ entityKey user) (userEmail $ entityVal user)
+        return $ ApiUser.ShowUser (fromSqlKey user') (userEmail user)

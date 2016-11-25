@@ -3,6 +3,12 @@ User json sql=users
     password String
     createdAt UTCTime Maybe
     updatedAt UTCTime Maybe
+    UniqueUserEmail email
+    deriving Show
+
+Session json sql=sessions
+    userId  UserId
+    cookie  String
     deriving Show
 
 Product json sql=products

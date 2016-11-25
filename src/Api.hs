@@ -1,5 +1,6 @@
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE DataKinds      #-}
+{-# LANGUAGE TypeOperators  #-}
+{-# LANGUAGE TypeFamilies   #-}
 
 module Api where
 
@@ -9,7 +10,7 @@ import           Control.Monad.Reader.Class
 import           Data.Int                         (Int64)
 import           Database.Persist.Postgresql      (Entity (..), fromSqlKey, insert,
                                                    selectFirst, selectList, (==.))
-import           Network.Wai                      (Application)
+import           Network.Wai                      (Application, Request)
 import           Servant
 import           Servant.API                      ((:<|>) ((:<|>)), (:>), BasicAuth,
                                                   Get, JSON)
@@ -24,34 +25,35 @@ import           Servant.Server                   (BasicAuthCheck (BasicAuthChec
                                                    serveWithContext, Handler)
 import           Servant.Server.Experimental.Auth (AuthHandler, AuthServerData,
                                                    mkAuthHandler)
-import           Servant.Server.Experimental.Auth()
 
 
 import           Config                      (App (..), Config (..))
 import           Models
 
-import qualified Api.User                    as UserApi
+import           Api.Types
+import           Api.Authentication
+import           Api.User
 import qualified Api.Warehouse               as WarehouseApi
 import qualified Api.Register                as Register
 
-type API = Register.API 
-       :<|> UserApi.API
-       :<|> WarehouseApi.API
+type API = Register.API :<|> Api.User.API :<|> WarehouseApi.API
 
-server :: ServerT API App
-server = Register.server :<|> UserApi.server :<|> WarehouseApi.server
+type instance AuthServerData (AuthProtect "madison-auth") = Api.User.ShowUser
 
-appToServer :: Config -> Server API
-appToServer cfg = enter (convertApp cfg) server
+server :: ServerT Api.API App
+server = Register.server :<|> Api.User.server :<|> WarehouseApi.server
+
+appToServer :: Config -> Server Api.API
+appToServer cfg = enter (convertApp cfg) Api.server
 
 convertApp :: Config -> App :~> ExceptT ServantErr IO
 convertApp cfg = Nat (flip runReaderT cfg . runApp)
 
-appApi :: Proxy API
+appApi :: Proxy Api.API
 appApi = Proxy
 
-authServerContext :: Context (BasicAuthCheck Register.AuthUser ': '[])
-authServerContext = Register.authCheck :. EmptyContext
+authServerContext :: Context (AuthHandler Request Api.User.ShowUser ': '[])
+authServerContext = authHandler :. EmptyContext
 
 app :: Config -> Application
 app cfg =

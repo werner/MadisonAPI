@@ -21,6 +21,7 @@ import           Network.Wai                      (Application)
 import           Servant
 import           Web.HttpApiData
 
+import           Api.Types
 import           Config                           (App (..), Config (..))
 import           Models
 import qualified Api.User                         as ApiUser
@@ -53,48 +54,48 @@ instance ToHttpApiData SortOrder where
         toUrlPiece = showTextData
 
 type API = 
-             "warehouses" :> BasicAuth "auth-realm" Register.AuthUser 
+             "warehouses" :> MadisonAuthProtect 
                           :> QueryParam "name"   String 
                           :> QueryParam "order"  SortOrder                   
                           :> QueryParam "limit"  Int64 
-                          :> QueryParam "offset" Int64                 :> Get    '[JSON] [WarehouseStock]
-        :<|> "warehouses" :> BasicAuth "auth-realm" Register.AuthUser 
-                          :> Capture "id" Int64                        :> Get    '[JSON] (Entity Warehouse)
-        :<|> "warehouses" :> BasicAuth "auth-realm" Register.AuthUser
-                          :> ReqBody '[JSON] CrudWarehouse             :> Post   '[JSON] Int64
-        :<|> "warehouses" :> BasicAuth "auth-realm" Register.AuthUser
+                          :> QueryParam "offset" Int64     :> Get    '[JSON] [WarehouseStock]
+        :<|> "warehouses" :> MadisonAuthProtect 
+                          :> Capture "id" Int64            :> Get    '[JSON] (Entity Warehouse)
+        :<|> "warehouses" :> MadisonAuthProtect
+                          :> ReqBody '[JSON] CrudWarehouse :> Post   '[JSON] Int64
+        :<|> "warehouses" :> MadisonAuthProtect
                           :> Capture "id" Int64 
-                          :> ReqBody '[JSON] CrudWarehouse             :> Put    '[JSON] Int64
-        :<|> "warehouses" :> BasicAuth "auth-realm" Register.AuthUser
-                          :> Capture "id" Int64                        :> Delete '[JSON] Int64
+                          :> ReqBody '[JSON] CrudWarehouse :> Put    '[JSON] Int64
+        :<|> "warehouses" :> MadisonAuthProtect
+                          :> Capture "id" Int64            :> Delete '[JSON] Int64
 
 server :: ServerT API App
 server = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
 
-all' :: Register.AuthUser -> Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
-all' user name sortMethod limit offset = do
+all' :: MadisonAuthData -> Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
+all' session name sortMethod limit offset = do
         warehouses <- findAll' name sortMethod limit offset
         return $ transformAll' warehouses
 
-show' :: Register.AuthUser -> Int64 -> App (Entity Warehouse)
-show' user id = do
+show' :: MadisonAuthData -> Int64 -> App (Entity Warehouse)
+show' session id = do
     maybeWarehouse <- runDb (selectFirst [ WarehouseId P.==. toSqlKey id] [])
     getWarehouse maybeWarehouse
 
-insert' :: Register.AuthUser -> CrudWarehouse -> App Int64
-insert' user crudWarehouse = do
+insert' :: MadisonAuthData -> CrudWarehouse -> App Int64
+insert' session crudWarehouse = do
     user <- runDb (selectFirst [] []) >>= ApiUser.getUser
     new  <- runDb $ P.insert $ Warehouse (cwName crudWarehouse) (entityKey user) Nothing Nothing
     return $ fromSqlKey new
 
-update' :: Register.AuthUser -> Int64 -> CrudWarehouse -> App Int64
-update' user id warehouse = do
+update' :: MadisonAuthData -> Int64 -> CrudWarehouse -> App Int64
+update' session id warehouse = do
     warehouseKey <- getKeyFromId id
     runDb $ P.update warehouseKey [WarehouseName =. cwName warehouse]
     return $ fromSqlKey warehouseKey
 
-delete' :: Register.AuthUser -> Int64 -> App Int64
-delete' user id = do
+delete' :: MadisonAuthData -> Int64 -> App Int64
+delete' session id = do
     warehouseKey <- getKeyFromId id
     runDb $ P.delete warehouseKey
     return $ fromSqlKey warehouseKey
