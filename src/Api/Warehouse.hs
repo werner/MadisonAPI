@@ -82,12 +82,15 @@ show' session id = do
     maybeWarehouse <- runDb (selectFirst [ WarehouseId P.==. toSqlKey id] [])
     getWarehouse maybeWarehouse
 
+--TODO: Get user from session
 insert' :: MadisonAuthData -> CrudWarehouse -> App Int64
 insert' session crudWarehouse = do
     user <- runDb (selectFirst [] []) >>= ApiUser.getUser
     new  <- runDb $ P.insert $ Warehouse (cwName crudWarehouse) (entityKey user) Nothing Nothing
     return $ fromSqlKey new
 
+--TODO: Make a where clause that checks the warehouse has the same user id
+--as the session has.
 update' :: MadisonAuthData -> Int64 -> CrudWarehouse -> App Int64
 update' session id warehouse = do
     warehouseKey <- getKeyFromId id

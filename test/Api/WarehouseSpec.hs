@@ -66,8 +66,8 @@ spec = with appSpec $ do
 
         it "creates a warehouse" $ do
           user' <- liftIO $ createUser "test@test.com"
-          post  <- postJson (C.pack "/warehouses") (WarehouseStock 0 "Second" (suId user') 0.0)
-          pure post `shouldRespondWith` 201
+          post  <- postJson (C.pack "/warehouses") (CrudWarehouse "Second")
+          pure post `shouldRespondWith` 200
 
 type APISpec = Api.Warehouse.API
 
