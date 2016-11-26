@@ -15,7 +15,8 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Config, Models, Api, Api.Types, Api.Register, Api.User, Api.Warehouse
+  exposed-modules:     Config, Models
+                     , Api, Api.Types, Api.Authentication, Api.Register, Api.User, Api.Warehouse
                      , Formula.Evaluator, Formula.Parser, Formula.Types, Formula.Functions
   build-depends:       base >= 4.7 && < 5
                      , aeson
@@ -46,6 +47,7 @@ library
                      , safe
                      , template-haskell
                      , text
+                     , either
   default-language:    Haskell2010
 
 executable madison-api-exe

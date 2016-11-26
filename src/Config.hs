@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeOperators              #-}
 
 module Config where
 
@@ -17,7 +18,7 @@ import           Database.Persist.Postgresql          (ConnectionPool,
                                                        createPostgresqlPool)
 import           Network.Wai                          (Middleware)
 import           Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
-import           Servant                              (ServantErr)
+import           Servant
 import           System.Environment                   (lookupEnv)
 import           Safe                                 (readMay)
 
@@ -103,3 +104,6 @@ getConfig = do
 
 getPort :: IO Int
 getPort = lookupSetting "MADISON_PORT" 9090
+
+convertApp :: Config -> App :~> ExceptT ServantErr IO
+convertApp cfg = Nat (flip runReaderT cfg . runApp)

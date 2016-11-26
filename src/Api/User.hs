@@ -12,6 +12,7 @@ import           Data.Aeson
 import           Control.Monad.Except
 import           Control.Monad.Reader             (ReaderT, runReaderT)
 import           Control.Monad.Reader.Class
+import           Control.Monad.Trans.Either
 import           Data.Int                         (Int64)
 import           Database.Persist.Postgresql      (entityVal, Entity (..), fromSqlKey, insert,
                                                    selectFirst, selectList, (==.))

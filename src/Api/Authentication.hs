@@ -19,7 +19,7 @@ import           Servant.Server
 import           Database.Persist.Postgresql      (Entity (..), fromSqlKey, insert,
                                                    selectFirst, selectList, (==.))
 import           Control.Monad.IO.Class
-import           Config                           (App (..), Config (..), getConfig,
+import           Config                           (App (..), Config (..), getConfig, convertApp,
                                                    Environment (..), makePool, lookupSetting)
 import           Models
 import           Api.User
@@ -47,11 +47,8 @@ checkSession session = do
 
 lookUpUser :: Config -> C.ByteString -> Handler Api.User.ShowUser
 lookUpUser cfg session = do
-  maybeSession <- enter (convertAppX cfg) (getSession session)
-  enter (convertAppX cfg) (getMaybeUserById maybeSession)
-
-convertAppX :: Config -> App :~> ExceptT ServantErr IO
-convertAppX cfg = Nat (flip runReaderT cfg . runApp)
+  maybeSession <- enter (convertApp cfg) (getSession session)
+  enter (convertApp cfg) (getMaybeUserById maybeSession)
 
 getSession :: C.ByteString -> App (Maybe (Entity Session))
 getSession session = runDb (selectFirst [SessionCookie ==. C.unpack session] [])

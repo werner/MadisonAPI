@@ -27,7 +27,7 @@ import           Servant.Server.Experimental.Auth (AuthHandler, AuthServerData,
                                                    mkAuthHandler)
 
 
-import           Config                      (App (..), Config (..))
+import           Config                      (App (..), Config (..), convertApp)
 import           Models
 
 import           Api.Types
@@ -45,9 +45,6 @@ server = Register.server :<|> Api.User.server :<|> WarehouseApi.server
 
 appToServer :: Config -> Server Api.API
 appToServer cfg = enter (convertApp cfg) Api.server
-
-convertApp :: Config -> App :~> ExceptT ServantErr IO
-convertApp cfg = Nat (flip runReaderT cfg . runApp)
 
 appApi :: Proxy Api.API
 appApi = Proxy

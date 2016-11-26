@@ -27,9 +27,6 @@ import           Config                      (App (..), Config (..))
 import           Models
 import qualified Api.User                    as ApiUser
 
-data AuthUser = AuthUser { auId    :: Int64
-                         , auEmail :: String } deriving (Eq, Show, Read, Generic)
-
 type API = "register" :> ReqBody '[JSON] User :> Post '[JSON] ApiUser.ShowUser
 
 server :: ServerT API App
