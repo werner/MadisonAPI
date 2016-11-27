@@ -48,6 +48,8 @@ library
                      , template-haskell
                      , text
                      , either
+                     , cereal
+                     , exceptions
   default-language:    Haskell2010
 
 executable madison-api-exe
