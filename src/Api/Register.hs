@@ -11,6 +11,7 @@ import           Data.Aeson
 import           Data.Int                    (Int64)
 import qualified Data.ByteString.Char8       as C
 
+import           Control.Monad.Catch
 import           Servant
 import           Servant.Server              (BasicAuthCheck (BasicAuthCheck),
                                               BasicAuthResult( Authorized
@@ -23,16 +24,18 @@ import           Servant.API.BasicAuth       (BasicAuthData (BasicAuthData))
 import           Database.Persist.Postgresql (Entity (..), fromSqlKey, insert,
                                               selectFirst, selectList, (==.))
 
+import           Data.ByteString             (ByteString)
 import           Config                      (App (..), Config (..))
 import           Models
-import qualified Api.User                    as ApiUser
+import           Api.User
+import           Api.Session
 
-type API = "register" :> ReqBody '[JSON] User :> Post '[JSON] ApiUser.ShowUser
+type API = "register" :> ReqBody '[JSON] User :> Post '[JSON] Int64
 
-server :: ServerT API App
+server :: ServerT Api.Register.API App
 server = register
 
-register :: User -> App ApiUser.ShowUser
+register :: User -> App Int64
 register user = do
         user' <- runDb $ insert $ User (userEmail user) (userPassword user) Nothing Nothing
-        return $ ApiUser.ShowUser (fromSqlKey user') (userEmail user)
+        return $ fromSqlKey user'

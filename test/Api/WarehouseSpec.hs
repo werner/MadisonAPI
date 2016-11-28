@@ -99,7 +99,7 @@ createUser :: String -> IO Api.User.ShowUser
 createUser email = do
         pool <- makePool Test
         user' <- P.runSqlPool (P.insert $ User email "12345" Nothing Nothing) pool
-        return $ Api.User.ShowUser (P.fromSqlKey user') email
+        return $ Api.User.ShowUser "1234" email
 
 getWarehouseFromStock :: App WarehouseStock -> Config -> (ExceptT ServantErr IO) WarehouseStock
 getWarehouseFromStock = runReaderT . runApp

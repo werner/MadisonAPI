@@ -6,6 +6,7 @@
 
 module Api.Authentication where
 
+import           Control.Monad.Reader.Class
 import           Data.Maybe
 import           Servant
 import           Control.Monad.Except
@@ -16,9 +17,11 @@ import           Servant.Server.Experimental.Auth (AuthHandler, AuthServerData,
                                                    mkAuthHandler)
 import           Network.Wai                      (Request, requestHeaders)
 import           Servant.Server
-import           Database.Persist.Postgresql      (Entity (..), fromSqlKey, insert,
+import           Database.Persist.Postgresql      (Entity (..), fromSqlKey, insert, runSqlPool,
                                                    selectFirst, selectList, (==.))
 import           Control.Monad.IO.Class
+import           Data.UUID.V4
+import           Data.UUID.Types
 import           Config                           (App (..), Config (..), getConfig, convertApp,
                                                    Environment (..), makePool, lookupSetting)
 import           Models
@@ -30,9 +33,16 @@ authenticate user = do
     case maybeUser of
          Nothing ->
             throwError err404
-         Just user ->
-            return $ Api.User.ShowUser (fromSqlKey $ entityKey user) (userEmail $ entityVal user)
+         Just user -> do
+             uuid <- generateUUID user
+             return $ Api.User.ShowUser uuid (userEmail $ entityVal user)
 
+generateUUID :: (MonadReader Config App, MonadIO App) => Entity User -> App String
+generateUUID user = do
+          uuid <- liftIO $ nextRandom
+          runDb (insert $ Session (entityKey user) (toString uuid))
+          return $ toString uuid
+        
 authHandler :: AuthHandler Request Api.User.ShowUser
 authHandler =
   let handler req = case lookup (CI.mk $ C.pack "madison-auth") (requestHeaders req) of
@@ -59,4 +69,4 @@ getMaybeUserById (Just session) = do
         maybeUser <- runDb (selectFirst [UserId ==. (sessionUserId $ entityVal session)] [])
         case maybeUser of
             Nothing    -> throwError err404
-            Just user' -> return $ Api.User.ShowUser 1 $ userEmail $ entityVal user' 
+            Just user' -> return $ Api.User.ShowUser (sessionCookie $ entityVal session) (userEmail $ entityVal user')

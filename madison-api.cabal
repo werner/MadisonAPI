@@ -16,12 +16,13 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Config, Models
-                     , Api, Api.Types, Api.Authentication, Api.Register, Api.User, Api.Warehouse
+                     , Api, Api.Types, Api.Authentication, Api.Session, Api.Register, Api.User, Api.Warehouse
                      , Formula.Evaluator, Formula.Parser, Formula.Types, Formula.Functions
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , servant
                      , servant-server
+                     , cookie
                      , servant-auth-cookie
                      , wai
                      , wai-extra
@@ -35,10 +36,10 @@ library
                      , parsec
                      , indents
                      , containers
-                     , persistent            ==2.2.4.1
-                     , persistent-postgresql ==2.2.2
-                     , persistent-template   ==2.1.8.1
-                     , esqueleto             ==2.4.3
+                     , persistent            
+                     , persistent-postgresql 
+                     , persistent-template
+                     , esqueleto             
                      , postgresql-simple
                      , monad-logger
                      , transformers
@@ -50,6 +51,9 @@ library
                      , either
                      , cereal
                      , exceptions
+                     , cryptonite
+                     , uuid
+                     , uuid-types
   default-language:    Haskell2010
 
 executable madison-api-exe
