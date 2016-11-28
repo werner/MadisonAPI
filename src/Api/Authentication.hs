@@ -17,7 +17,7 @@ import           Servant.Server.Experimental.Auth (AuthHandler, AuthServerData,
                                                    mkAuthHandler)
 import           Network.Wai                      (Request, requestHeaders)
 import           Servant.Server
-import           Database.Persist.Postgresql      (Entity (..), fromSqlKey, insert, runSqlPool,
+import           Database.Persist.Postgresql      (Entity (..), fromSqlKey, insert, runSqlPool, delete,
                                                    selectFirst, selectList, (==.))
 import           Control.Monad.IO.Class
 import           Data.UUID.V4
@@ -31,16 +31,18 @@ authenticate :: User -> App Api.User.ShowUser
 authenticate user = do
     maybeUser <- runDb (selectFirst [UserEmail ==. userEmail user] [])
     case maybeUser of
-         Nothing ->
-            throwError err404
+         Nothing   -> throwError err404
          Just user -> do
-             uuid <- generateUUID user
+             uuid    <- generateUUID user
+             session <- runDb (selectFirst [SessionUserId ==. entityKey user] [])
+             case session of
+                 Just s -> runDb $ delete $ entityKey s
+             runDb (insert $ Session (entityKey user) uuid)
              return $ Api.User.ShowUser uuid (userEmail $ entityVal user)
 
 generateUUID :: (MonadReader Config App, MonadIO App) => Entity User -> App String
 generateUUID user = do
           uuid <- liftIO $ nextRandom
-          runDb (insert $ Session (entityKey user) (toString uuid))
           return $ toString uuid
         
 authHandler :: AuthHandler Request Api.User.ShowUser
@@ -69,4 +71,5 @@ getMaybeUserById (Just session) = do
         maybeUser <- runDb (selectFirst [UserId ==. (sessionUserId $ entityVal session)] [])
         case maybeUser of
             Nothing    -> throwError err404
-            Just user' -> return $ Api.User.ShowUser (sessionCookie $ entityVal session) (userEmail $ entityVal user')
+            Just user' -> return $ Api.User.ShowUser (sessionCookie $ entityVal session) 
+                                                     (userEmail $ entityVal user')
