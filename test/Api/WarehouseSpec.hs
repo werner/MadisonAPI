@@ -87,28 +87,12 @@ serverSpec = Api.Warehouse.server
 appToServerSpec :: Config -> Server APISpec
 appToServerSpec cfg = enter (convertApp cfg) serverSpec
 
-authServerContextSpec :: Context (AuthHandler Request Api.User.ShowUser ': '[])
-authServerContextSpec = authHandler :. EmptyContext
-
 appSpec :: IO Application
 appSpec = do
+    setupDB
     pool <- makePool Test
     let cfg = Config { getPool = pool, getEnv = Test }
-    P.runSqlPool doMigrations pool
-    P.runSqlPool wipeDB pool
-    loggedIn <- P.runSqlPool (P.insert $ User "logged_user@user.com" "12345" Nothing Nothing) pool 
-    P.runSqlPool (P.insert $ Session loggedIn "key-test") pool 
     return $ serveWithContext apiSpec authServerContextSpec (appToServerSpec cfg)
-
-postJson :: (ToJSON a) => ByteString -> a -> WaiSession SResponse
-postJson path =
-    request methodPost path [(CI.mk (C.pack "Content-Type"), (C.pack "application/json")), 
-                             (CI.mk (C.pack "madison-auth"), (C.pack "key-test"))] . encode
-
-putJson :: (ToJSON a) => ByteString -> a -> WaiSession SResponse
-putJson path =
-    request methodPut path [(CI.mk (C.pack "Content-Type"), (C.pack "application/json")), 
-                             (CI.mk (C.pack "madison-auth"), (C.pack "key-test"))] . encode
 
 createUser :: String -> IO Api.User.ShowUser
 createUser email = do
