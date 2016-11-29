@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeOperators              #-}
 module Api.WarehouseSpec (main, spec) where
 
+import           Debug.Trace
 import qualified Data.ByteString.Char8            as C
 import           Data.ByteString                  (ByteString)
 import           Data.CaseInsensitive             as CI
@@ -68,10 +69,14 @@ spec = with appSpec $ do
         it "creates a warehouse" $ do
           postJson (C.pack "/warehouses") (CrudWarehouse "Second") `shouldRespondWith` 200
 
+        it "Throw a 409 error status code on a duplicate warehouse" $ do
+          liftIO $ getIOWarehouse
+          postJson (C.pack "/warehouses") (CrudWarehouse "Second") `shouldRespondWith` 409
+
         it "updates a warehouse" $ do
           warehouse <- liftIO $ getIOWarehouse
           let id    = P.fromSqlKey $ P.entityKey warehouse
-          let path  = "/warehouses" ++ (show id)
+          let path  = "/warehouses/" ++ (show id)
           putJson (C.pack path) (CrudWarehouse "Third") `shouldRespondWith` 200
 
 type APISpec = Api.Warehouse.API

@@ -85,8 +85,11 @@ show' session id = do
 insert' :: MadisonAuthData -> CrudWarehouse -> App Int64
 insert' showUser crudWarehouse = do
     user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
-    new  <- runDb $ P.insert $ Warehouse (cwName crudWarehouse) (entityKey user) Nothing Nothing
-    return $ fromSqlKey new
+    new  <- runDb $ P.insertBy $ Warehouse (cwName crudWarehouse) (entityKey user) Nothing Nothing
+    case new of
+        Left  err -> throwError (err409 { errReasonPhrase = "Duplicate warehouse: " 
+                                                            Prelude.++ (show $ warehouseName $ P.entityVal err) }) 
+        Right key -> return $ fromSqlKey key
 
 update' :: MadisonAuthData -> Int64 -> CrudWarehouse -> App Int64
 update' showUser id warehouse = do
