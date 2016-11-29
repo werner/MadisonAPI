@@ -24,6 +24,7 @@ Product json sql=products
 Warehouse json sql=warehouses
     name String
     userId UserId
+    UniqueWarehouseNameUserId name userId
     createdAt UTCTime Maybe
     updatedAt UTCTime Maybe
     deriving Show
