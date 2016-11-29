@@ -66,5 +66,10 @@ putJson path =
     request methodPut path [(CI.mk (C.pack "Content-Type"), (C.pack "application/json")), 
                              (CI.mk (C.pack "madison-auth"), (C.pack "key-test"))] . encode
 
+deleteJson :: ByteString -> WaiSession SResponse
+deleteJson path =
+    request methodDelete path [(CI.mk (C.pack "Content-Type"), (C.pack "application/json")), 
+                               (CI.mk (C.pack "madison-auth"), (C.pack "key-test"))] $ encode ""
+
 authServerContextSpec :: Context (AuthHandler Request Api.User.ShowUser ': '[])
 authServerContextSpec = authHandler :. EmptyContext

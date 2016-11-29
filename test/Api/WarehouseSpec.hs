@@ -79,6 +79,12 @@ spec = with appSpec $ do
           let path  = "/warehouses/" ++ (show id)
           putJson (C.pack path) (CrudWarehouse "Third") `shouldRespondWith` 200
 
+        it "deletes a warehouse" $ do
+          warehouse <- liftIO $ getIOWarehouse
+          let id    = P.fromSqlKey $ P.entityKey warehouse
+          let path  = "/warehouses/" ++ (show id)
+          deleteJson (C.pack path) `shouldRespondWith` 200
+
 type APISpec = Api.Warehouse.API
 
 serverSpec :: ServerT APISpec App
