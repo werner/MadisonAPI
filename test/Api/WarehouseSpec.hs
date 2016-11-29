@@ -7,6 +7,7 @@ import qualified Data.ByteString.Char8            as C
 import           Data.ByteString                  (ByteString)
 import           Data.CaseInsensitive             as CI
 
+import           Control.Exception
 import           Test.Hspec
 import           Test.Hspec.Wai
 import           Test.Hspec.Wai.JSON
@@ -65,9 +66,13 @@ spec = with appSpec $ do
                   (encode "") `shouldRespondWith` [json|[]|]  
 
         it "creates a warehouse" $ do
-          user' <- liftIO $ createUser "test@test.com"
-          post  <- postJson (C.pack "/warehouses") (CrudWarehouse "Second")
-          pure post `shouldRespondWith` 200
+          postJson (C.pack "/warehouses") (CrudWarehouse "Second") `shouldRespondWith` 200
+
+        it "updates a warehouse" $ do
+          warehouse <- liftIO $ getIOWarehouse
+          let id    = P.fromSqlKey $ P.entityKey warehouse
+          let path  = "/warehouses" ++ (show id)
+          putJson (C.pack path) (CrudWarehouse "Third") `shouldRespondWith` 200
 
 type APISpec = Api.Warehouse.API
 
@@ -95,11 +100,27 @@ postJson path =
     request methodPost path [(CI.mk (C.pack "Content-Type"), (C.pack "application/json")), 
                              (CI.mk (C.pack "madison-auth"), (C.pack "key-test"))] . encode
 
+putJson :: (ToJSON a) => ByteString -> a -> WaiSession SResponse
+putJson path =
+    request methodPut path [(CI.mk (C.pack "Content-Type"), (C.pack "application/json")), 
+                             (CI.mk (C.pack "madison-auth"), (C.pack "key-test"))] . encode
+
 createUser :: String -> IO Api.User.ShowUser
 createUser email = do
         pool <- makePool Test
         user' <- P.runSqlPool (P.insert $ User email "12345" Nothing Nothing) pool
         return $ Api.User.ShowUser "1234" email
 
-getWarehouseFromStock :: App WarehouseStock -> Config -> (ExceptT ServantErr IO) WarehouseStock
-getWarehouseFromStock = runReaderT . runApp
+getIOWarehouse :: IO (P.Entity Warehouse)
+getIOWarehouse = do
+        pool <- makePool Test
+        user <- P.runSqlPool (P.selectFirst [UserEmail P.==. "logged_user@user.com"] []) pool
+        P.runSqlPool (P.insert $ Warehouse "Second" (P.entityKey $ getUserFromMaybe user) Nothing Nothing) pool
+        warehouse <- P.runSqlPool (P.selectFirst [WarehouseName P.==. "Second"] []) pool
+        case warehouse of
+            Just w  -> return $ w
+            Nothing -> throw err404
+
+getUserFromMaybe :: (Maybe (P.Entity User)) -> (P.Entity User)
+getUserFromMaybe (Just user) = user
+getUserFromMaybe Nothing     = throw err404

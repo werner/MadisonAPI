@@ -20,7 +20,7 @@ import           Database.Persist.Postgresql      (entityVal, Entity (..), fromS
                                                    selectFirst, selectList, (==.))
 import           Network.Wai                      (Application)
 import           Servant
-import           Servant.Server.Experimental.Auth (AuthHandler)
+import           Servant.Server.Experimental.Auth (AuthHandler, AuthServerData)
 import           Servant.Server.Experimental.Auth.Cookie
 
 import           Api.Types
@@ -32,31 +32,38 @@ data ShowUser = ShowUser { suId    :: String
 
 instance ToJSON ShowUser
 instance FromJSON ShowUser
-instance Serialize Api.User.ShowUser
+instance Serialize ShowUser
 
+type instance AuthServerData (AuthProtect "madison-auth") = ShowUser
 type instance AuthCookieData = User
 
-type API =
-         "users" :> MadisonAuthProtect     :> Get '[JSON] [Entity User]
-    :<|> "users" :> MadisonAuthProtect 
-                 :> Capture "email" String :> Get '[JSON] String
+type API = "users" :> MadisonAuthProtect :> Get '[JSON] ShowUser
 
 server :: ServerT API App
-server = allUsers :<|> singleUser
+server = singleUser
 
-allUsers :: MadisonAuthData -> App [Entity User]
-allUsers session =
-    runDb $ selectList [] []
-
-singleUser :: MadisonAuthData -> String -> App String
-singleUser session str = do
-    maybeUser <- runDb (selectFirst [UserEmail ==. str] [])
-    case maybeUser of
-         Nothing ->
-            throwError err404
-         Just user ->
-            return $ userEmail $ entityVal user
+singleUser :: MadisonAuthData -> App ShowUser
+singleUser showUser = do
+        sessionDB <- runDb (selectFirst [SessionCookie ==. suId showUser] [])
+        showUserBySession sessionDB
 
 getUser :: Maybe (Entity User) -> App (Entity User)
 getUser Nothing      = throwError err404
 getUser (Just user') = return user'
+
+showUserBySession :: Maybe (Entity Session) -> App ShowUser
+showUserBySession Nothing        = throwError err404
+showUserBySession (Just session) = do
+        maybeUser <- runDb (selectFirst [UserId ==. (sessionUserId $ entityVal session)] [])
+        case maybeUser of
+            Nothing    -> throwError err404
+            Just user' -> return $ Api.User.ShowUser (sessionCookie $ entityVal session) 
+                                                     (userEmail $ entityVal user')
+
+getUserBySession :: Maybe (Entity Session) -> App (Entity User)
+getUserBySession Nothing        = throwError err404
+getUserBySession (Just session) = do
+        maybeUser <- runDb (selectFirst [UserId ==. (sessionUserId $ entityVal session)] [])
+        case maybeUser of
+            Nothing   -> throwError err404
+            Just user -> return $ user

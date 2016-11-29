@@ -24,7 +24,7 @@ import           Web.HttpApiData
 import           Api.Types
 import           Config                           (App (..), Config (..))
 import           Models
-import qualified Api.User                         as ApiUser
+import           Api.User
 import qualified Api.Register                     as Register
 
 type RawWarehouseStock = (E.Value (Key Warehouse), E.Value String, 
@@ -69,7 +69,7 @@ type API =
         :<|> "warehouses" :> MadisonAuthProtect
                           :> Capture "id" Int64            :> Delete '[JSON] Int64
 
-server :: ServerT API App
+server :: ServerT Api.Warehouse.API App
 server = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
 
 all' :: MadisonAuthData -> Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
@@ -82,25 +82,25 @@ show' session id = do
     maybeWarehouse <- runDb (selectFirst [ WarehouseId P.==. toSqlKey id] [])
     getWarehouse maybeWarehouse
 
---TODO: Get user from session
 insert' :: MadisonAuthData -> CrudWarehouse -> App Int64
-insert' session crudWarehouse = do
-    user <- runDb (selectFirst [] []) >>= ApiUser.getUser
+insert' showUser crudWarehouse = do
+    user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
     new  <- runDb $ P.insert $ Warehouse (cwName crudWarehouse) (entityKey user) Nothing Nothing
     return $ fromSqlKey new
 
---TODO: Make a where clause that checks the warehouse has the same user id
---as the session has.
 update' :: MadisonAuthData -> Int64 -> CrudWarehouse -> App Int64
-update' session id warehouse = do
+update' showUser id warehouse = do
+    user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
     warehouseKey <- getKeyFromId id
-    runDb $ P.update warehouseKey [WarehouseName =. cwName warehouse]
+    runDb $ P.updateWhere [WarehouseId ==. warehouseKey, 
+                           WarehouseUserId ==. (entityKey user)] [WarehouseName =. cwName warehouse] 
     return $ fromSqlKey warehouseKey
 
 delete' :: MadisonAuthData -> Int64 -> App Int64
-delete' session id = do
+delete' showUser id = do
+    user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
     warehouseKey <- getKeyFromId id
-    runDb $ P.delete warehouseKey
+    runDb $ P.deleteWhere [WarehouseId ==. warehouseKey, WarehouseUserId ==. (entityKey user)]
     return $ fromSqlKey warehouseKey
 
 getKeyFromId :: Int64 -> App (Key Warehouse)

@@ -60,16 +60,7 @@ checkSession session = do
 lookUpUser :: Config -> C.ByteString -> Handler Api.User.ShowUser
 lookUpUser cfg session = do
   maybeSession <- enter (convertApp cfg) (getSession session)
-  enter (convertApp cfg) (getMaybeUserById maybeSession)
+  enter (convertApp cfg) (Api.User.showUserBySession maybeSession)
 
 getSession :: C.ByteString -> App (Maybe (Entity Session))
 getSession session = runDb (selectFirst [SessionCookie ==. C.unpack session] [])
-
-getMaybeUserById :: Maybe (Entity Session) -> App Api.User.ShowUser
-getMaybeUserById Nothing        = throwError err404
-getMaybeUserById (Just session) = do
-        maybeUser <- runDb (selectFirst [UserId ==. (sessionUserId $ entityVal session)] [])
-        case maybeUser of
-            Nothing    -> throwError err404
-            Just user' -> return $ Api.User.ShowUser (sessionCookie $ entityVal session) 
-                                                     (userEmail $ entityVal user')
