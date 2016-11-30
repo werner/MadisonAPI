@@ -2,7 +2,6 @@
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE DeriveGeneric     #-}
 
 module Api.Authentication where
 
@@ -42,7 +41,7 @@ authenticate user = do
 
 generateUUID :: (MonadReader Config App, MonadIO App) => Entity User -> App String
 generateUUID user = do
-          uuid <- liftIO $ nextRandom
+          uuid <- liftIO nextRandom
           return $ toString uuid
         
 authHandler :: AuthHandler Request Api.User.ShowUser
@@ -54,7 +53,7 @@ authHandler =
 
 checkSession :: C.ByteString -> Handler Api.User.ShowUser
 checkSession session = do
-        cfg <- liftIO $ getConfig
+        cfg <- liftIO getConfig
         lookUpUser cfg session
 
 lookUpUser :: Config -> C.ByteString -> Handler Api.User.ShowUser

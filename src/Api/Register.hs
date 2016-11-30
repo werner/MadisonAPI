@@ -2,7 +2,6 @@
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE DeriveGeneric     #-}
 
 module Api.Register where
 

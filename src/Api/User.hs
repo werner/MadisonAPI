@@ -54,7 +54,7 @@ getUser (Just user') = return user'
 showUserBySession :: Maybe (Entity Session) -> App ShowUser
 showUserBySession Nothing        = throwError err404
 showUserBySession (Just session) = do
-        maybeUser <- runDb (selectFirst [UserId ==. (sessionUserId $ entityVal session)] [])
+        maybeUser <- runDb (selectFirst [UserId ==. sessionUserId (entityVal session)] [])
         case maybeUser of
             Nothing    -> throwError err404
             Just user' -> return $ Api.User.ShowUser (sessionCookie $ entityVal session) 
@@ -63,7 +63,7 @@ showUserBySession (Just session) = do
 getUserBySession :: Maybe (Entity Session) -> App (Entity User)
 getUserBySession Nothing        = throwError err404
 getUserBySession (Just session) = do
-        maybeUser <- runDb (selectFirst [UserId ==. (sessionUserId $ entityVal session)] [])
+        maybeUser <- runDb (selectFirst [UserId ==. sessionUserId (entityVal session)] [])
         case maybeUser of
             Nothing   -> throwError err404
-            Just user -> return $ user
+            Just user -> return user

@@ -100,7 +100,7 @@ getConfig :: IO Config
 getConfig = do
     env  <- lookupSetting "MADISON_ENV" Development
     pool <- makePool env
-    return $ Config { getPool = pool, getEnv = env }
+    return Config { getPool = pool, getEnv = env }
 
 getPort :: IO Int
 getPort = lookupSetting "MADISON_PORT" 9090

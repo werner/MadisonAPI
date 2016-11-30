@@ -88,7 +88,7 @@ insert' showUser crudWarehouse = do
     new  <- runDb $ P.insertBy $ Warehouse (cwName crudWarehouse) (entityKey user) Nothing Nothing
     case new of
         Left  err -> throwError (err409 { errReasonPhrase = "Duplicate warehouse: " 
-                                                            Prelude.++ (show $ warehouseName $ P.entityVal err) }) 
+                                                            Prelude.++ show (warehouseName $ P.entityVal err) }) 
         Right key -> return $ fromSqlKey key
 
 update' :: MadisonAuthData -> Int64 -> CrudWarehouse -> App Int64
@@ -96,14 +96,14 @@ update' showUser id warehouse = do
     user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
     warehouseKey <- getKeyFromId id
     runDb $ P.updateWhere [WarehouseId ==. warehouseKey, 
-                           WarehouseUserId ==. (entityKey user)] [WarehouseName =. cwName warehouse] 
+                           WarehouseUserId ==. entityKey user] [WarehouseName =. cwName warehouse] 
     return $ fromSqlKey warehouseKey
 
 delete' :: MadisonAuthData -> Int64 -> App Int64
 delete' showUser id = do
     user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
     warehouseKey <- getKeyFromId id
-    runDb $ P.deleteWhere [WarehouseId ==. warehouseKey, WarehouseUserId ==. (entityKey user)]
+    runDb $ P.deleteWhere [WarehouseId ==. warehouseKey, WarehouseUserId ==. entityKey user]
     return $ fromSqlKey warehouseKey
 
 getKeyFromId :: Int64 -> App (Key Warehouse)
