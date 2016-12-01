@@ -84,8 +84,10 @@ show' session id = do
 
 insert' :: MadisonAuthData -> CrudWarehouse -> App Int64
 insert' showUser crudWarehouse = do
-    user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
-    new  <- runDb $ P.insertBy $ Warehouse (cwName crudWarehouse) (entityKey user) Nothing Nothing
+    user     <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
+    scopedId <- getLastScopedId $ fromSqlKey (entityKey user)
+    new      <- runDb $ P.insertBy $ Warehouse (cwName crudWarehouse) (entityKey user) 
+                                                (succ $ E.unValue $ Prelude.head scopedId)  Nothing Nothing
     case new of
         Left  err -> throwError (err409 { errReasonPhrase = "Duplicate warehouse: " 
                                                             Prelude.++ show (warehouseName $ P.entityVal err) }) 
@@ -110,6 +112,13 @@ getKeyFromId :: Int64 -> App (Key Warehouse)
 getKeyFromId id = do
     warehouse' <- runDb (selectFirst [ WarehouseId P.==. toSqlKey id] []) >>= getWarehouse
     return $ entityKey warehouse'
+
+getLastScopedId :: Int64 -> App [E.Value Int]
+getLastScopedId userId = runDb $ E.select $ E.from $ \warehouses -> do
+                             E.where_ $ warehouses ^. WarehouseUserId E.==. E.val (toSqlKey userId)
+                             E.orderBy [E.desc (warehouses ^. WarehouseScopedId)]
+                             E.limit 1
+                             return (warehouses ^. WarehouseScopedId)
 
 getWarehouse :: Maybe (Entity Warehouse) -> App (Entity Warehouse)
 getWarehouse Nothing           = throwError err404
