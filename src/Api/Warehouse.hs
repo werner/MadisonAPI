@@ -15,11 +15,11 @@ import           Data.Aeson
 import           Data.Vector                      as V
 import           Data.Text                        as Text
 import           Data.Int                         (Int64)
-import           Database.Persist.Postgresql      as P
-import           Database.Persist.Postgresql      (Entity (..), fromSqlKey, insert, toSqlKey, update,
+import           Database.Persist.Postgresql      (insertBy, entityVal, updateWhere, deleteWhere, 
+                                                   PersistField(..),
+                                                   Entity (..), fromSqlKey, insert, toSqlKey, update,
                                                    delete, selectFirst, selectList, (==.), (=.))
 import qualified Database.Esqueleto               as E
-import           Database.Esqueleto               ((^.), (?.))
 import           Network.Wai                      (Application)
 import           Servant
 import           Web.HttpApiData
@@ -83,31 +83,31 @@ all' session name sortMethod limit offset = do
 show' :: MadisonAuthData -> Int -> App (Entity Warehouse)
 show' showUser id = do
     user           <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
-    maybeWarehouse <- runDb (selectFirst [WarehouseScopedId P.==. id, WarehouseUserId ==. entityKey user] [])
+    maybeWarehouse <- runDb (selectFirst [WarehouseScopedId ==. id, WarehouseUserId ==. entityKey user] [])
     getWarehouse maybeWarehouse
 
 insert' :: MadisonAuthData -> CrudWarehouse -> App Int
 insert' showUser crudWarehouse = do
     user     <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
     scopedId <- nextScopedId (fromSqlKey $ entityKey user) WarehouseUserId WarehouseScopedId
-    new      <- runDb $ P.insertBy $ Warehouse (cwName crudWarehouse) (entityKey user) 
+    new      <- runDb $ insertBy $ Warehouse (cwName crudWarehouse) (entityKey user) 
                                                 scopedId Nothing Nothing
     case new of
         Left  err -> throwError (err409 { errReasonPhrase = "Duplicate warehouse: " 
-                                                            Prelude.++ show (warehouseName $ P.entityVal err) }) 
+                                                            Prelude.++ show (warehouseName $ entityVal err) }) 
         Right key -> return scopedId
 
 update' :: MadisonAuthData -> Int -> CrudWarehouse -> App Int
 update' showUser id warehouse = do
     user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
-    runDb $ P.updateWhere [WarehouseScopedId ==. id, 
+    runDb $ updateWhere [WarehouseScopedId ==. id, 
                            WarehouseUserId ==. entityKey user] [WarehouseName =. cwName warehouse] 
     return id
 
 delete' :: MadisonAuthData -> Int -> App Int
 delete' showUser id = do
     user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
-    runDb $ P.deleteWhere [WarehouseScopedId ==. id, WarehouseUserId ==. entityKey user]
+    runDb $ deleteWhere [WarehouseScopedId ==. id, WarehouseUserId ==. entityKey user]
     return id
 
 getWarehouse :: Maybe (Entity Warehouse) -> App (Entity Warehouse)
@@ -123,20 +123,20 @@ findAll' :: Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App
 findAll' name sortMethod limit offset = runDb 
                         $ E.select 
                         $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
-                            E.on $ E.just (warehouses ^. WarehouseId) E.==. stocks ?. StockWarehouseId
-                            E.where_  $ warehouses ^. WarehouseName `E.ilike`
+                            E.on $ E.just (warehouses E.^. WarehouseId) E.==. stocks E.?. StockWarehouseId
+                            E.where_  $ warehouses E.^. WarehouseName `E.ilike`
                                         (E.%) E.++. E.val (fromMaybe "%" name) E.++. (E.%)
-                            E.orderBy [getSortMethod sortMethod (warehouses ^. WarehouseName)]
-                            E.groupBy (warehouses ^. WarehouseId,
-                                       warehouses ^. WarehouseName,
-                                       warehouses ^. WarehouseUserId)
+                            E.orderBy [getSortMethod sortMethod (warehouses E.^. WarehouseName)]
+                            E.groupBy (warehouses E.^. WarehouseId,
+                                       warehouses E.^. WarehouseName,
+                                       warehouses E.^. WarehouseUserId)
                             E.limit  $ fromMaybe 10 limit
                             E.offset $ fromMaybe 0  offset
                             return
-                                ( warehouses ^. WarehouseId
-                                , warehouses ^. WarehouseName 
-                                , warehouses ^. WarehouseUserId
-                                , E.sum_ (stocks ?. StockAmount)
+                                ( warehouses E.^. WarehouseId
+                                , warehouses E.^. WarehouseName 
+                                , warehouses E.^. WarehouseUserId
+                                , E.sum_ (stocks E.?. StockAmount)
                                 )
 
 transform' :: RawWarehouseStock -> WarehouseStock
