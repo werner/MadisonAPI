@@ -46,10 +46,10 @@ import           SpecSupport
 type MadisonAuthReq = AuthenticateReq MadisonAuthProtect
 
 getAll       :: MadisonAuthReq -> Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> Manager -> BaseUrl -> ClientM [WarehouseStock]
-getShow      :: MadisonAuthReq -> Int64 -> Manager -> BaseUrl -> ClientM (P.Entity Warehouse)
-postInsert   :: MadisonAuthReq -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int64
-putUpdate    :: MadisonAuthReq -> Int64 -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int64
-deleteDelete :: MadisonAuthReq -> Int64 -> Manager -> BaseUrl -> ClientM Int64
+getShow      :: MadisonAuthReq -> Int -> Manager -> BaseUrl -> ClientM (P.Entity Warehouse)
+postInsert   :: MadisonAuthReq -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int
+putUpdate    :: MadisonAuthReq -> Int -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int
+deleteDelete :: MadisonAuthReq -> Int -> Manager -> BaseUrl -> ClientM Int
 getAll :<|> getShow :<|> postInsert :<|> putUpdate :<|> deleteDelete = client apiSpec
 
 apiSpec :: Proxy Api.Warehouse.API
@@ -67,7 +67,7 @@ spec = with appSpec $ do
                   (encode "") `shouldRespondWith` [json|[]|]  
 
         it "creates a warehouse" $ do
-          postJson (C.pack "/warehouses") (CrudWarehouse "Second") `shouldRespondWith` 200
+          postJson (C.pack "/warehouses") (CrudWarehouse "Second") `shouldRespondWith` [json|1|]
 
         it "Throw a 409 error status code on a duplicate warehouse" $ do
           liftIO $ getIOWarehouse
@@ -110,7 +110,7 @@ getIOWarehouse :: IO (P.Entity Warehouse)
 getIOWarehouse = do
         pool <- makePool Test
         user <- P.runSqlPool (P.selectFirst [UserEmail P.==. "logged_user@user.com"] []) pool
-        P.runSqlPool (P.insert $ Warehouse "Second" (P.entityKey $ getUserFromMaybe user) Nothing Nothing) pool
+        P.runSqlPool (P.insert $ Warehouse "Second" (P.entityKey $ getUserFromMaybe user) 1 Nothing Nothing) pool
         warehouse <- P.runSqlPool (P.selectFirst [WarehouseName P.==. "Second"] []) pool
         case warehouse of
             Just w  -> return $ w

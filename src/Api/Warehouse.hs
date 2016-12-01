@@ -4,8 +4,11 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE TypeFamilies         #-}
 module Api.Warehouse where
 
+import           Control.Monad.Reader.Class
+import           Control.Monad.IO.Class
 import           GHC.Generics
 import           Data.Maybe
 import           Data.Aeson
@@ -60,14 +63,14 @@ type API =
                           :> QueryParam "limit"  Int64 
                           :> QueryParam "offset" Int64     :> Get    '[JSON] [WarehouseStock]
         :<|> "warehouses" :> MadisonAuthProtect 
-                          :> Capture "id" Int64            :> Get    '[JSON] (Entity Warehouse)
+                          :> Capture "id" Int              :> Get    '[JSON] (Entity Warehouse)
         :<|> "warehouses" :> MadisonAuthProtect
-                          :> ReqBody '[JSON] CrudWarehouse :> Post   '[JSON] Int64
+                          :> ReqBody '[JSON] CrudWarehouse :> Post   '[JSON] Int
         :<|> "warehouses" :> MadisonAuthProtect
-                          :> Capture "id" Int64 
-                          :> ReqBody '[JSON] CrudWarehouse :> Put    '[JSON] Int64
+                          :> Capture "id" Int
+                          :> ReqBody '[JSON] CrudWarehouse :> Put    '[JSON] Int
         :<|> "warehouses" :> MadisonAuthProtect
-                          :> Capture "id" Int64            :> Delete '[JSON] Int64
+                          :> Capture "id" Int              :> Delete '[JSON] Int
 
 server :: ServerT Api.Warehouse.API App
 server = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
@@ -77,48 +80,35 @@ all' session name sortMethod limit offset = do
         warehouses <- findAll' name sortMethod limit offset
         return $ transformAll' warehouses
 
-show' :: MadisonAuthData -> Int64 -> App (Entity Warehouse)
-show' session id = do
-    maybeWarehouse <- runDb (selectFirst [ WarehouseId P.==. toSqlKey id] [])
+show' :: MadisonAuthData -> Int -> App (Entity Warehouse)
+show' showUser id = do
+    user           <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
+    maybeWarehouse <- runDb (selectFirst [WarehouseScopedId P.==. id, WarehouseUserId ==. entityKey user] [])
     getWarehouse maybeWarehouse
 
-insert' :: MadisonAuthData -> CrudWarehouse -> App Int64
+insert' :: MadisonAuthData -> CrudWarehouse -> App Int
 insert' showUser crudWarehouse = do
     user     <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
-    scopedId <- getLastScopedId $ fromSqlKey (entityKey user)
+    scopedId <- nextScopedId (fromSqlKey $ entityKey user) WarehouseUserId WarehouseScopedId
     new      <- runDb $ P.insertBy $ Warehouse (cwName crudWarehouse) (entityKey user) 
-                                                (succ $ E.unValue $ Prelude.head scopedId)  Nothing Nothing
+                                                scopedId Nothing Nothing
     case new of
         Left  err -> throwError (err409 { errReasonPhrase = "Duplicate warehouse: " 
                                                             Prelude.++ show (warehouseName $ P.entityVal err) }) 
-        Right key -> return $ fromSqlKey key
+        Right key -> return scopedId
 
-update' :: MadisonAuthData -> Int64 -> CrudWarehouse -> App Int64
+update' :: MadisonAuthData -> Int -> CrudWarehouse -> App Int
 update' showUser id warehouse = do
     user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
-    warehouseKey <- getKeyFromId id
-    runDb $ P.updateWhere [WarehouseId ==. warehouseKey, 
+    runDb $ P.updateWhere [WarehouseScopedId ==. id, 
                            WarehouseUserId ==. entityKey user] [WarehouseName =. cwName warehouse] 
-    return $ fromSqlKey warehouseKey
+    return id
 
-delete' :: MadisonAuthData -> Int64 -> App Int64
+delete' :: MadisonAuthData -> Int -> App Int
 delete' showUser id = do
     user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
-    warehouseKey <- getKeyFromId id
-    runDb $ P.deleteWhere [WarehouseId ==. warehouseKey, WarehouseUserId ==. entityKey user]
-    return $ fromSqlKey warehouseKey
-
-getKeyFromId :: Int64 -> App (Key Warehouse)
-getKeyFromId id = do
-    warehouse' <- runDb (selectFirst [ WarehouseId P.==. toSqlKey id] []) >>= getWarehouse
-    return $ entityKey warehouse'
-
-getLastScopedId :: Int64 -> App [E.Value Int]
-getLastScopedId userId = runDb $ E.select $ E.from $ \warehouses -> do
-                             E.where_ $ warehouses ^. WarehouseUserId E.==. E.val (toSqlKey userId)
-                             E.orderBy [E.desc (warehouses ^. WarehouseScopedId)]
-                             E.limit 1
-                             return (warehouses ^. WarehouseScopedId)
+    runDb $ P.deleteWhere [WarehouseScopedId ==. id, WarehouseUserId ==. entityKey user]
+    return id
 
 getWarehouse :: Maybe (Entity Warehouse) -> App (Entity Warehouse)
 getWarehouse Nothing           = throwError err404
