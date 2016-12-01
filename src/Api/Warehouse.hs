@@ -3,8 +3,9 @@
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE DeriveGeneric        #-}
+
 module Api.Warehouse where
 
 import           Control.Monad.Reader.Class
@@ -47,14 +48,6 @@ instance FromJSON WarehouseStock
 
 instance ToJSON CrudWarehouse
 instance FromJSON CrudWarehouse
-
-data SortOrder = SAsc | SDesc deriving (Read, Show, Generic)
-
-instance FromHttpApiData SortOrder where
-        parseUrlPiece sortOrder = Right (read $ Text.unpack sortOrder :: SortOrder)
-
-instance ToHttpApiData SortOrder where
-        toUrlPiece = showTextData
 
 type API = 
              "warehouses" :> MadisonAuthProtect 
