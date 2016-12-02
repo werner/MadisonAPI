@@ -27,12 +27,13 @@ import           GHC.Generics                     (Generic)
 
 import           Data.Time (UTCTime)
 import           Data.Text (Text)
-import           Database.Esqueleto               (select, from, where_, val, orderBy,
+import           Database.Esqueleto               (select, from, where_, val, orderBy, asc, desc,
                                                   desc, limit, Value(..), unValue, EntityField, Key,
                                                   SqlBackend, ToBackendKey, PersistField, PersistEntityBackend,
-                                                  PersistEntity, SqlPersistT, toSqlKey,
+                                                  PersistEntity, SqlPersistT, toSqlKey, SqlExpr, OrderBy,
                                                   (^.), (?.), (==.))
 
+import           Api.Types
 import           Config
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"]
@@ -68,3 +69,8 @@ getLastScopedId userId userIdField scopeIdField =
             orderBy [desc (warehouses ^. scopeIdField)]
             limit 1
             return (warehouses ^. scopeIdField)
+
+getSortMethod :: (PersistField t) => Maybe SortOrder -> (SqlExpr (Value t) -> SqlExpr OrderBy)
+getSortMethod (Just SAsc)  = asc
+getSortMethod (Just SDesc) = desc
+getSortMethod Nothing      = asc
