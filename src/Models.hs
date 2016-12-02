@@ -70,7 +70,6 @@ getLastScopedId userId userIdField scopeIdField =
             limit 1
             return (warehouses ^. scopeIdField)
 
-getSortMethod :: (PersistField t) => Maybe SortOrder -> (SqlExpr (Value t) -> SqlExpr OrderBy)
-getSortMethod (Just SAsc)  = asc
-getSortMethod (Just SDesc) = desc
-getSortMethod Nothing      = asc
+getSortMethod :: (PersistField t) => SortOrder -> (SqlExpr (Value t) -> SqlExpr OrderBy)
+getSortMethod SAsc  = asc
+getSortMethod SDesc = desc

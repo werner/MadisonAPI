@@ -22,3 +22,4 @@ instance FromHttpApiData SortOrder where
 
 instance ToHttpApiData SortOrder where
         toUrlPiece = showTextData
+

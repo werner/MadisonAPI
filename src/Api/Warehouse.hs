@@ -49,12 +49,30 @@ instance FromJSON WarehouseStock
 instance ToJSON CrudWarehouse
 instance FromJSON CrudWarehouse
 
+data SortField = SWarehouseName | SWarehouseScopedId deriving (Read, Show, Generic)
+
+instance FromHttpApiData SortField where
+        parseUrlPiece sortField = Right (read $ Text.unpack sortField :: SortField)
+
+instance ToHttpApiData SortField where
+        toUrlPiece = showTextData
+
+data SortWarehouse = SortWarehouse { sSortOrder :: SortOrder
+                                   , sSortField :: SortField }
+                                   deriving (Show, Read, Generic)
+
+instance FromHttpApiData [SortWarehouse] where
+        parseUrlPiece sortWarehouse = Right (read $ Text.unpack sortWarehouse :: [SortWarehouse])
+
+instance ToHttpApiData [SortWarehouse] where
+        toUrlPiece = showTextData
+
 type API = 
              "warehouses" :> MadisonAuthProtect 
-                          :> QueryParam "name"   String 
-                          :> QueryParam "order"  SortOrder                   
-                          :> QueryParam "limit"  Int64 
-                          :> QueryParam "offset" Int64     :> Get    '[JSON] [WarehouseStock]
+                          :> QueryParam "name"      String 
+                          :> QueryParam "sortField" [SortWarehouse]
+                          :> QueryParam "limit"     Int64 
+                          :> QueryParam "offset"    Int64  :> Get    '[JSON] [WarehouseStock]
         :<|> "warehouses" :> MadisonAuthProtect 
                           :> Capture "id" Int              :> Get    '[JSON] (Entity Warehouse)
         :<|> "warehouses" :> MadisonAuthProtect
@@ -68,9 +86,10 @@ type API =
 server :: ServerT Api.Warehouse.API App
 server = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
 
-all' :: MadisonAuthData -> Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
-all' session name sortMethod limit offset = do
-        warehouses <- findAll' name sortMethod limit offset
+all' :: MadisonAuthData -> Maybe String -> Maybe [SortWarehouse] 
+                        -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
+all' session name sortWarehouses limit offset = do
+        warehouses <- findAll' name sortWarehouses limit offset
         return $ transformAll' warehouses
 
 show' :: MadisonAuthData -> Int -> App (Entity Warehouse)
@@ -107,14 +126,21 @@ getWarehouse :: Maybe (Entity Warehouse) -> App (Entity Warehouse)
 getWarehouse Nothing           = throwError err404
 getWarehouse (Just warehouse') = return warehouse'
 
-findAll' :: Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [RawWarehouseStock]
-findAll' name sortMethod limit offset = runDb 
+getSortField :: E.SqlExpr (Entity Warehouse) -> SortOrder -> SortField -> E.SqlExpr E.OrderBy
+getSortField warehouses sortOrder SWarehouseName     = getSortMethod sortOrder $ warehouses E.^. WarehouseName
+getSortField warehouses sortOrder SWarehouseScopedId = getSortMethod sortOrder $ warehouses E.^. WarehouseScopedId
+
+findAll' :: Maybe String -> Maybe [SortWarehouse]
+                         -> Maybe Int64 -> Maybe Int64 -> App [RawWarehouseStock]
+findAll' name sortWarehouses limit offset = runDb 
                         $ E.select 
                         $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
                             E.on $ E.just (warehouses E.^. WarehouseId) E.==. stocks E.?. StockWarehouseId
                             E.where_  $ warehouses E.^. WarehouseName `E.ilike`
                                         (E.%) E.++. E.val (fromMaybe "%" name) E.++. (E.%)
-                            E.orderBy [getSortMethod sortMethod (warehouses E.^. WarehouseName)]
+                            E.orderBy $ Prelude.map (\x -> getSortField warehouses 
+                                                             (sSortOrder x) (sSortField x)) $
+                                       fromMaybe [SortWarehouse SAsc SWarehouseScopedId] sortWarehouses
                             E.groupBy (warehouses E.^. WarehouseId,
                                        warehouses E.^. WarehouseName,
                                        warehouses E.^. WarehouseUserId)
