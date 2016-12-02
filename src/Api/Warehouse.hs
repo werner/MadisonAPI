@@ -107,11 +107,6 @@ getWarehouse :: Maybe (Entity Warehouse) -> App (Entity Warehouse)
 getWarehouse Nothing           = throwError err404
 getWarehouse (Just warehouse') = return warehouse'
 
-getSortMethod :: (PersistField t) => Maybe SortOrder -> (E.SqlExpr (E.Value t) -> E.SqlExpr E.OrderBy)
-getSortMethod (Just SAsc)  = E.asc
-getSortMethod (Just SDesc) = E.desc
-getSortMethod Nothing      = E.asc
-
 findAll' :: Maybe String -> Maybe SortOrder -> Maybe Int64 -> Maybe Int64 -> App [RawWarehouseStock]
 findAll' name sortMethod limit offset = runDb 
                         $ E.select 
