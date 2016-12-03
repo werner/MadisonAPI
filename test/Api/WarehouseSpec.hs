@@ -45,7 +45,7 @@ import           SpecSupport
 
 type MadisonAuthReq = AuthenticateReq MadisonAuthProtect
 
-getAll       :: MadisonAuthReq -> Maybe String -> Maybe [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> Manager -> BaseUrl -> ClientM [WarehouseStock]
+getAll       :: MadisonAuthReq -> Maybe String -> [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> Manager -> BaseUrl -> ClientM [WarehouseStock]
 getShow      :: MadisonAuthReq -> Int -> Manager -> BaseUrl -> ClientM (P.Entity Warehouse)
 postInsert   :: MadisonAuthReq -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int
 putUpdate    :: MadisonAuthReq -> Int -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int

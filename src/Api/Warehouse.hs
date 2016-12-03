@@ -61,32 +61,32 @@ data SortWarehouse = SortWarehouse { sSortOrder :: SortOrder
                                    , sSortField :: SortField }
                                    deriving (Show, Read, Generic)
 
-instance FromHttpApiData [SortWarehouse] where
-        parseUrlPiece sortWarehouse = Right (read $ Text.unpack sortWarehouse :: [SortWarehouse])
+instance FromHttpApiData SortWarehouse where
+        parseUrlPiece sortWarehouse = Right (read $ Text.unpack sortWarehouse :: SortWarehouse)
 
-instance ToHttpApiData [SortWarehouse] where
+instance ToHttpApiData SortWarehouse where
         toUrlPiece = showTextData
 
 type API = 
              "warehouses" :> MadisonAuthProtect 
-                          :> QueryParam "name"      String 
-                          :> QueryParam "sortField" [SortWarehouse]
-                          :> QueryParam "limit"     Int64 
-                          :> QueryParam "offset"    Int64  :> Get    '[JSON] [WarehouseStock]
+                          :> QueryParam "name"       String 
+                          :> QueryParams "sortField" SortWarehouse
+                          :> QueryParam "limit"      Int64 
+                          :> QueryParam "offset"     Int64          :> Get    '[JSON] [WarehouseStock]
         :<|> "warehouses" :> MadisonAuthProtect 
-                          :> Capture "id" Int              :> Get    '[JSON] (Entity Warehouse)
+                          :> Capture "id" Int                       :> Get    '[JSON] (Entity Warehouse)
         :<|> "warehouses" :> MadisonAuthProtect
-                          :> ReqBody '[JSON] CrudWarehouse :> Post   '[JSON] Int
+                          :> ReqBody '[JSON] CrudWarehouse          :> Post   '[JSON] Int
         :<|> "warehouses" :> MadisonAuthProtect
                           :> Capture "id" Int
-                          :> ReqBody '[JSON] CrudWarehouse :> Put    '[JSON] Int
+                          :> ReqBody '[JSON] CrudWarehouse          :> Put    '[JSON] Int
         :<|> "warehouses" :> MadisonAuthProtect
-                          :> Capture "id" Int              :> Delete '[JSON] Int
+                          :> Capture "id" Int                       :> Delete '[JSON] Int
 
 server :: ServerT Api.Warehouse.API App
 server = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
 
-all' :: MadisonAuthData -> Maybe String -> Maybe [SortWarehouse] 
+all' :: MadisonAuthData -> Maybe String -> [SortWarehouse] 
                         -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
 all' session name sortWarehouses limit offset = do
         warehouses <- findAll' name sortWarehouses limit offset
@@ -130,8 +130,7 @@ getSortField :: E.SqlExpr (Entity Warehouse) -> SortOrder -> SortField -> E.SqlE
 getSortField warehouses sortOrder SWarehouseName     = getSortMethod sortOrder $ warehouses E.^. WarehouseName
 getSortField warehouses sortOrder SWarehouseScopedId = getSortMethod sortOrder $ warehouses E.^. WarehouseScopedId
 
-findAll' :: Maybe String -> Maybe [SortWarehouse]
-                         -> Maybe Int64 -> Maybe Int64 -> App [RawWarehouseStock]
+findAll' :: Maybe String -> [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> App [RawWarehouseStock]
 findAll' name sortWarehouses limit offset = runDb 
                         $ E.select 
                         $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
@@ -140,7 +139,7 @@ findAll' name sortWarehouses limit offset = runDb
                                         (E.%) E.++. E.val (fromMaybe "%" name) E.++. (E.%)
                             E.orderBy $ Prelude.map (\x -> getSortField warehouses 
                                                              (sSortOrder x) (sSortField x)) $
-                                       fromMaybe [SortWarehouse SAsc SWarehouseScopedId] sortWarehouses
+                                        sortWarehouses
                             E.groupBy (warehouses E.^. WarehouseId,
                                        warehouses E.^. WarehouseName,
                                        warehouses E.^. WarehouseUserId)
