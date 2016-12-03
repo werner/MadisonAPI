@@ -67,12 +67,25 @@ instance FromHttpApiData SortWarehouse where
 instance ToHttpApiData SortWarehouse where
         toUrlPiece = showTextData
 
+data FilterWarehouse = FilterWarehouse { filterName :: Maybe String 
+                                       , filterId   :: Maybe Int }
+                                       deriving (Show, Read, Generic)
+
+instance ToJSON   FilterWarehouse
+instance FromJSON FilterWarehouse
+
+instance FromHttpApiData FilterWarehouse where
+        parseUrlPiece filterWarehouse = Right (read $ Text.unpack filterWarehouse :: FilterWarehouse)
+
+instance ToHttpApiData FilterWarehouse where
+        toUrlPiece = showTextData
+
 type API = 
              "warehouses" :> MadisonAuthProtect 
-                          :> QueryParam "name"       String 
                           :> QueryParams "sortField" SortWarehouse
                           :> QueryParam "limit"      Int64 
-                          :> QueryParam "offset"     Int64          :> Get    '[JSON] [WarehouseStock]
+                          :> QueryParam "offset"     Int64          
+                          :> ReqBody '[JSON] FilterWarehouse        :> Get    '[JSON] [WarehouseStock]
         :<|> "warehouses" :> MadisonAuthProtect 
                           :> Capture "id" Int                       :> Get    '[JSON] (Entity Warehouse)
         :<|> "warehouses" :> MadisonAuthProtect
@@ -86,10 +99,9 @@ type API =
 server :: ServerT Api.Warehouse.API App
 server = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
 
-all' :: MadisonAuthData -> Maybe String -> [SortWarehouse] 
-                        -> Maybe Int64 -> Maybe Int64 -> App [WarehouseStock]
-all' session name sortWarehouses limit offset = do
-        warehouses <- findAll' name sortWarehouses limit offset
+all' :: MadisonAuthData -> [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> FilterWarehouse -> App [WarehouseStock]
+all' session sortWarehouses limit offset filters = do
+        warehouses <- findAll' sortWarehouses limit offset filters
         return $ transformAll' warehouses
 
 show' :: MadisonAuthData -> Int -> App (Entity Warehouse)
@@ -130,16 +142,29 @@ getSortField :: E.SqlExpr (Entity Warehouse) -> SortOrder -> SortField -> E.SqlE
 getSortField warehouses sortOrder SWarehouseName     = getSortMethod sortOrder $ warehouses E.^. WarehouseName
 getSortField warehouses sortOrder SWarehouseScopedId = getSortMethod sortOrder $ warehouses E.^. WarehouseScopedId
 
-findAll' :: Maybe String -> [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> App [RawWarehouseStock]
-findAll' name sortWarehouses limit offset = runDb 
+mapFilterWarehouse
+  :: E.Esqueleto query expr backend =>
+     expr (Entity Warehouse) -> FilterWarehouse -> query ()
+mapFilterWarehouse warehouses (FilterWarehouse (Just name) Nothing)   = E.where_ $ warehouses E.^. WarehouseName `E.ilike`
+                                                                          (E.%) E.++. (E.val name) E.++. (E.%)
+mapFilterWarehouse warehouses (FilterWarehouse Nothing (Just id))     = E.where_ $ warehouses E.^. WarehouseScopedId E.==. 
+                                                                          (E.val id)
+mapFilterWarehouse warehouses (FilterWarehouse (Just name) (Just id)) = E.where_ $ 
+                                                                            (warehouses E.^. WarehouseName `E.ilike`
+                                                                              (E.%) E.++. E.val name E.++. (E.%))
+                                                                          E.&&.
+                                                                            warehouses E.^. WarehouseScopedId E.==. E.val id
+mapFilterWarehouse warehouses (FilterWarehouse Nothing Nothing)       = E.where_ $ warehouses E.^. WarehouseName `E.ilike`
+                                                                          (E.%) E.++. E.val "%" E.++. (E.%) 
+
+findAll' :: [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> FilterWarehouse -> App [RawWarehouseStock]
+findAll' sortWarehouses limit offset filters = runDb 
                         $ E.select 
                         $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
                             E.on $ E.just (warehouses E.^. WarehouseId) E.==. stocks E.?. StockWarehouseId
-                            E.where_  $ warehouses E.^. WarehouseName `E.ilike`
-                                        (E.%) E.++. E.val (fromMaybe "%" name) E.++. (E.%)
+                            mapFilterWarehouse warehouses filters
                             E.orderBy $ Prelude.map (\x -> getSortField warehouses 
-                                                             (sSortOrder x) (sSortField x)) $
-                                        sortWarehouses
+                                                             (sSortOrder x) (sSortField x)) $ sortWarehouses
                             E.groupBy (warehouses E.^. WarehouseId,
                                        warehouses E.^. WarehouseName,
                                        warehouses E.^. WarehouseUserId)

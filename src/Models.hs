@@ -13,7 +13,6 @@
 
 module Models where
 
-import           Debug.Trace
 import           Control.Monad.Reader
 import           Data.Maybe
 import           Safe
