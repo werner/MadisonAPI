@@ -31,10 +31,10 @@ import           Models
 import           Api.User
 import qualified Api.Register                     as Register
 
-type RawWarehouseStock = (E.Value (Key Warehouse), E.Value String, 
+type RawWarehouseStock = (E.Value Int, E.Value String, 
                           E.Value (Key User), E.Value (Maybe Double))
 
-data WarehouseStock = WarehouseStock { wId     :: Int64
+data WarehouseStock = WarehouseStock { wId     :: Int
                                      , wName   :: String
                                      , wUserId :: Int64
                                      , wStock  :: Double
@@ -147,14 +147,14 @@ findAll' name sortWarehouses limit offset = runDb
                             E.limit  $ fromMaybe 10 limit
                             E.offset $ fromMaybe 0  offset
                             return
-                                ( warehouses E.^. WarehouseId
+                                ( warehouses E.^. WarehouseScopedId
                                 , warehouses E.^. WarehouseName 
                                 , warehouses E.^. WarehouseUserId
                                 , E.sum_ (stocks E.?. StockAmount)
                                 )
 
 transform' :: RawWarehouseStock -> WarehouseStock
-transform' warehouse = WarehouseStock (fromSqlKey $ E.unValue id) 
+transform' warehouse = WarehouseStock (E.unValue id) 
                                       (E.unValue name)
                                       (fromSqlKey $ E.unValue userId) 
                                       (fromMaybe 0 $ E.unValue stock)

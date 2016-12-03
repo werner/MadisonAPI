@@ -13,6 +13,7 @@
 
 module Models where
 
+import           Debug.Trace
 import           Control.Monad.Reader
 import           Data.Maybe
 import           Safe
@@ -54,7 +55,7 @@ nextScopedId
      -> EntityField val (Key record) -> EntityField val Int -> App Int
 nextScopedId userId userIdField scopeIdField = do
         lastScopedId <- getLastScopedId userId userIdField scopeIdField
-        return $ unValue (fromMaybe (Value 1) (headMay lastScopedId))
+        return $ succ $ unValue (fromMaybe (Value 1) (headMay lastScopedId))
 
 getLastScopedId
   :: (PersistEntityBackend val ~ SqlBackend, PersistEntity val,

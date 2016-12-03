@@ -67,20 +67,20 @@ spec = with appSpec $ do
                   (encode "") `shouldRespondWith` [json|[]|]  
 
         it "creates a warehouse" $ do
-          postJson (C.pack "/warehouses") (CrudWarehouse "Second") `shouldRespondWith` [json|1|]
+          postJson (C.pack "/warehouses") (CrudWarehouse "Second") `shouldRespondWith` [json|2|]
 
         it "Throw a 409 error status code on a duplicate warehouse" $ do
-          liftIO $ getIOWarehouse
+          liftIO $ createWarehouse "Second"
           postJson (C.pack "/warehouses") (CrudWarehouse "Second") `shouldRespondWith` 409
 
         it "updates a warehouse" $ do
-          warehouse <- liftIO $ getIOWarehouse
+          warehouse <- liftIO $ createWarehouse "Second"
           let id    = P.fromSqlKey $ P.entityKey warehouse
           let path  = "/warehouses/" ++ (show id)
           putJson (C.pack path) (CrudWarehouse "Third") `shouldRespondWith` 200
 
         it "deletes a warehouse" $ do
-          warehouse <- liftIO $ getIOWarehouse
+          warehouse <- liftIO $ createWarehouse "first"
           let id    = P.fromSqlKey $ P.entityKey warehouse
           let path  = "/warehouses/" ++ (show id)
           deleteJson (C.pack path) `shouldRespondWith` 200
@@ -106,12 +106,12 @@ createUser email = do
         user' <- P.runSqlPool (P.insert $ User email "12345" Nothing Nothing) pool
         return $ Api.User.ShowUser "1234" email
 
-getIOWarehouse :: IO (P.Entity Warehouse)
-getIOWarehouse = do
+createWarehouse :: String -> IO (P.Entity Warehouse)
+createWarehouse name = do
         pool <- makePool Test
         user <- P.runSqlPool (P.selectFirst [UserEmail P.==. "logged_user@user.com"] []) pool
-        P.runSqlPool (P.insert $ Warehouse "Second" (P.entityKey $ getUserFromMaybe user) 1 Nothing Nothing) pool
-        warehouse <- P.runSqlPool (P.selectFirst [WarehouseName P.==. "Second"] []) pool
+        P.runSqlPool (P.insert $ Warehouse name (P.entityKey $ getUserFromMaybe user) 1 Nothing Nothing) pool
+        warehouse <- P.runSqlPool (P.selectFirst [WarehouseName P.==. name] []) pool
         case warehouse of
             Just w  -> return $ w
             Nothing -> throw err404
