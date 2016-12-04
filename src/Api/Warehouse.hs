@@ -49,17 +49,14 @@ instance FromJSON WarehouseStock
 instance ToJSON CrudWarehouse
 instance FromJSON CrudWarehouse
 
-data SortField = SWarehouseName | SWarehouseScopedId deriving (Read, Show, Generic)
+data SortWarehouse = SWarehouseNameAsc 
+                   | SWarehouseNameDesc 
+                   | SWarehouseScopedIdAsc 
+                   | SWarehouseScopedIdDesc 
+                   deriving (Show, Read, Generic)
 
-instance FromHttpApiData SortField where
-        parseUrlPiece sortField = Right (read $ Text.unpack sortField :: SortField)
-
-instance ToHttpApiData SortField where
-        toUrlPiece = showTextData
-
-data SortWarehouse = SortWarehouse { sSortOrder :: SortOrder
-                                   , sSortField :: SortField }
-                                   deriving (Show, Read, Generic)
+instance ToJSON   SortWarehouse
+instance FromJSON SortWarehouse
 
 instance FromHttpApiData SortWarehouse where
         parseUrlPiece sortWarehouse = Right (read $ Text.unpack sortWarehouse :: SortWarehouse)
@@ -83,8 +80,8 @@ instance ToHttpApiData FilterWarehouse where
 type API = 
              "warehouses" :> MadisonAuthProtect 
                           :> QueryParams "sortField" SortWarehouse
-                          :> QueryParam "limit"      Int64 
-                          :> QueryParam "offset"     Int64          
+                          :> QueryParam  "limit"     Int64 
+                          :> QueryParam  "offset"    Int64          
                           :> ReqBody '[JSON] FilterWarehouse        :> Get    '[JSON] [WarehouseStock]
         :<|> "warehouses" :> MadisonAuthProtect 
                           :> Capture "id" Int                       :> Get    '[JSON] (Entity Warehouse)
@@ -138,9 +135,11 @@ getWarehouse :: Maybe (Entity Warehouse) -> App (Entity Warehouse)
 getWarehouse Nothing           = throwError err404
 getWarehouse (Just warehouse') = return warehouse'
 
-getSortField :: E.SqlExpr (Entity Warehouse) -> SortOrder -> SortField -> E.SqlExpr E.OrderBy
-getSortField warehouses sortOrder SWarehouseName     = getSortMethod sortOrder $ warehouses E.^. WarehouseName
-getSortField warehouses sortOrder SWarehouseScopedId = getSortMethod sortOrder $ warehouses E.^. WarehouseScopedId
+getSortField :: E.SqlExpr (Entity Warehouse) -> SortWarehouse -> E.SqlExpr E.OrderBy
+getSortField warehouses SWarehouseNameAsc       = E.asc  $ warehouses E.^. WarehouseName
+getSortField warehouses SWarehouseNameDesc      = E.desc $ warehouses E.^. WarehouseName
+getSortField warehouses SWarehouseScopedIdAsc   = E.asc  $ warehouses E.^. WarehouseScopedId
+getSortField warehouses SWarehouseScopedIdDesc  = E.desc $ warehouses E.^. WarehouseScopedId
 
 mapFilterWarehouse
   :: E.Esqueleto query expr backend =>
@@ -163,8 +162,7 @@ findAll' sortWarehouses limit offset filters = runDb
                         $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
                             E.on $ E.just (warehouses E.^. WarehouseId) E.==. stocks E.?. StockWarehouseId
                             mapFilterWarehouse warehouses filters
-                            E.orderBy $ Prelude.map (\x -> getSortField warehouses 
-                                                             (sSortOrder x) (sSortField x)) $ sortWarehouses
+                            E.orderBy $ Prelude.map (\x -> getSortField warehouses x) $ sortWarehouses
                             E.groupBy (warehouses E.^. WarehouseId,
                                        warehouses E.^. WarehouseName,
                                        warehouses E.^. WarehouseUserId)

@@ -65,7 +65,7 @@ spec = with appSpec $ do
           liftIO $ createWarehouse "First"
           liftIO $ createWarehouse "Second"
           liftIO $ createWarehouse "Third"
-          request (C.pack "GET")  (C.pack "/warehouses") 
+          request (C.pack "GET")  (C.pack "/warehouses?sortField=SWarehouseNameAsc&sortField=SWarehouseScopedIdAsc&limit=10&offset=0") 
                   [(CI.mk (C.pack "Content-Type"), (C.pack "application/json")),
                    (CI.mk (C.pack "madison-auth"),  (C.pack "key-test"))] 
                   (encode $ FilterWarehouse Nothing Nothing) `shouldRespondWith` 200  
