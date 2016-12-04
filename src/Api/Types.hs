@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE DeriveGeneric        #-}
 
 module Api.Types where
 

@@ -145,9 +145,9 @@ mapFilterWarehouse
   :: E.Esqueleto query expr backend =>
      expr (Entity Warehouse) -> FilterWarehouse -> query ()
 mapFilterWarehouse warehouses (FilterWarehouse (Just name) Nothing)   = E.where_ $ warehouses E.^. WarehouseName `E.ilike`
-                                                                          (E.%) E.++. (E.val name) E.++. (E.%)
+                                                                          (E.%) E.++. E.val name E.++. (E.%)
 mapFilterWarehouse warehouses (FilterWarehouse Nothing (Just id))     = E.where_ $ warehouses E.^. WarehouseScopedId E.==. 
-                                                                          (E.val id)
+                                                                          E.val id
 mapFilterWarehouse warehouses (FilterWarehouse (Just name) (Just id)) = E.where_ $ 
                                                                             (warehouses E.^. WarehouseName `E.ilike`
                                                                               (E.%) E.++. E.val name E.++. (E.%))
@@ -162,7 +162,7 @@ findAll' sortWarehouses limit offset filters = runDb
                         $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
                             E.on $ E.just (warehouses E.^. WarehouseId) E.==. stocks E.?. StockWarehouseId
                             mapFilterWarehouse warehouses filters
-                            E.orderBy $ Prelude.map (\x -> getSortField warehouses x) $ sortWarehouses
+                            E.orderBy $ Prelude.map  (getSortField warehouses) sortWarehouses
                             E.groupBy (warehouses E.^. WarehouseId,
                                        warehouses E.^. WarehouseName,
                                        warehouses E.^. WarehouseUserId)
