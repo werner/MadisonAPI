@@ -8,12 +8,9 @@
 
 module Api.Warehouse where
 
-import           Control.Monad.Reader.Class
-import           Control.Monad.IO.Class
-import           GHC.Generics
-import           Data.Maybe
-import           Data.Aeson
-import           Data.Vector                      as V
+import           GHC.Generics                     (Generic)
+import           Data.Maybe                       (fromMaybe)
+import           Data.Aeson                       (ToJSON, FromJSON)
 import           Data.Text                        as Text
 import           Data.Int                         (Int64)
 import           Database.Persist.Postgresql      (insertBy, entityVal, updateWhere, deleteWhere, 
@@ -22,8 +19,8 @@ import           Database.Persist.Postgresql      (insertBy, entityVal, updateWh
                                                    delete, selectFirst, selectList, (==.), (=.))
 import qualified Database.Esqueleto               as E
 import           Network.Wai                      (Application)
-import           Servant
-import           Web.HttpApiData
+import           Servant                          
+import           Web.HttpApiData                  (showTextData)
 
 import           Api.Types
 import           Config                           (App (..), Config (..))

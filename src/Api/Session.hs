@@ -4,16 +4,13 @@
 
 module Api.Session where
 
-import           GHC.TypeLits
-import           Data.Serialize                   (Serialize)
-import           Control.Monad.Catch
-import           Servant.Server.Experimental.Auth         (AuthHandler, AuthServerData, mkAuthHandler)
-import           Servant.Server.Experimental.Auth.Cookie
-import           Servant                                  (Post, Headers, Header, ReqBody, AuthProtect, ServerT,
-                                                           Get, Server, Proxy, JSON, (:>))
-import           Web.Cookie
+import           GHC.TypeLits                             (KnownSymbol)
+import           Control.Monad.Catch                      (MonadThrow)
+import           Servant.Server.Experimental.Auth.Cookie  (mkServerKey, mkRandomSource, addSession)
+import           Servant                                  (Headers, Header, ReqBody, ServerT,
+                                                           Post, JSON, (:>))
+import           Web.Cookie                               (def)
 import           Crypto.Random                            (drgNew)
-import           Servant.API.ResponseHeaders
 import           Data.ByteString                          (ByteString)
 
 import           Api.Authentication

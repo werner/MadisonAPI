@@ -7,21 +7,18 @@
 
 module Api.User where
 
-import           GHC.Generics
-import qualified Data.ByteString.Char8            as C
-import           Data.Aeson
-import           Data.Serialize                   (Serialize)
-import           Control.Monad.Except
-import           Control.Monad.Reader             (ReaderT, runReaderT)
-import           Control.Monad.Reader.Class
-import           Control.Monad.Trans.Either
-import           Data.Int                         (Int64)
-import           Database.Persist.Postgresql      (entityVal, Entity (..), fromSqlKey, insert,
-                                                   selectFirst, selectList, (==.))
-import           Network.Wai                      (Application)
-import           Servant
-import           Servant.Server.Experimental.Auth (AuthHandler, AuthServerData)
-import           Servant.Server.Experimental.Auth.Cookie
+import           GHC.Generics                            (Generic)
+import qualified Data.ByteString.Char8                   as C
+import           Data.Aeson                              (ToJSON, FromJSON)
+import           Data.Serialize                          (Serialize)
+import           Control.Monad.Except                    (throwError) 
+import           Control.Monad.Reader                    (ReaderT, runReaderT)
+import           Database.Persist.Postgresql             (entityVal, Entity (..), fromSqlKey, insert,
+                                                          selectFirst, selectList, (==.))
+import           Network.Wai                             (Application)
+import           Servant                                 (AuthProtect, (:>), Get, JSON, ServerT, err404)
+import           Servant.Server.Experimental.Auth        (AuthHandler, AuthServerData)
+import           Servant.Server.Experimental.Auth.Cookie (AuthCookieData)
 
 import           Api.Types
 import           Config                           (App (..), Config (..))

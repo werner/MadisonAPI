@@ -5,22 +5,20 @@
 
 module Api.Authentication where
 
-import           Control.Monad.Reader.Class
-import           Data.Maybe
-import           Servant
-import           Control.Monad.Except
+import           Control.Monad.Reader.Class       (MonadReader)
+import           Control.Monad.Except             (throwError)
 import           Control.Monad.Reader             (runReaderT)
 import qualified Data.ByteString.Char8            as C
 import qualified Data.CaseInsensitive             as CI
 import           Servant.Server.Experimental.Auth (AuthHandler, AuthServerData,
                                                    mkAuthHandler)
 import           Network.Wai                      (Request, requestHeaders)
-import           Servant.Server
+import           Servant.Server                   (errReasonPhrase, Handler, enter, err401, err404)
 import           Database.Persist.Postgresql      (Entity (..), fromSqlKey, insert, runSqlPool, delete,
                                                    selectFirst, selectList, (==.))
-import           Control.Monad.IO.Class
-import           Data.UUID.V4
-import           Data.UUID.Types
+import           Control.Monad.IO.Class           (MonadIO, liftIO)
+import           Data.UUID.V4                     (nextRandom)
+import           Data.UUID.Types                  (toString)
 import           Config                           (App (..), Config (..), getConfig, convertApp,
                                                    Environment (..), makePool, lookupSetting)
 import           Models

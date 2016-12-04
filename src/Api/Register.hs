@@ -5,29 +5,15 @@
 
 module Api.Register where
 
-import           GHC.Generics
-import           Data.Aeson
 import           Data.Int                    (Int64)
 import qualified Data.ByteString.Char8       as C
 
-import           Control.Monad.Catch
-import           Servant
-import           Servant.Server              (BasicAuthCheck (BasicAuthCheck),
-                                              BasicAuthResult( Authorized
-                                                             , Unauthorized
-                                                             ),
-                                              Context ((:.), EmptyContext),
-                                              err401, err403, errBody, Server,
-                                              serveWithContext, Handler)
-import           Servant.API.BasicAuth       (BasicAuthData (BasicAuthData))
-import           Database.Persist.Postgresql (Entity (..), fromSqlKey, insert,
-                                              selectFirst, selectList, (==.))
+import           Servant                     ((:>), ReqBody, JSON, Post, ServerT)
+import           Database.Persist.Postgresql (fromSqlKey, insert)
 
-import           Data.ByteString             (ByteString)
 import           Config                      (App (..), Config (..))
 import           Models
 import           Api.User
-import           Api.Session
 
 type API = "register" :> ReqBody '[JSON] User :> Post '[JSON] Int64
 
