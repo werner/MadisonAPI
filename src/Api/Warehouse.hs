@@ -80,8 +80,6 @@ type API =
                           :> QueryParam  "limit"     Int64 
                           :> QueryParam  "offset"    Int64          
                           :> ReqBody '[JSON] FilterWarehouse        :> Get    '[JSON] [WarehouseStock]
-        :<|> "warehouses" :> MadisonAuthProtect 
-                          :> Capture "id" Int                       :> Get    '[JSON] (Entity Warehouse)
         :<|> "warehouses" :> MadisonAuthProtect
                           :> ReqBody '[JSON] CrudWarehouse          :> Post   '[JSON] Int
         :<|> "warehouses" :> MadisonAuthProtect
@@ -91,18 +89,12 @@ type API =
                           :> Capture "id" Int                       :> Delete '[JSON] Int
 
 server :: ServerT Api.Warehouse.API App
-server = all' :<|> show' :<|> insert' :<|> update' :<|> delete'
+server = all' :<|> insert' :<|> update' :<|> delete'
 
 all' :: MadisonAuthData -> [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> FilterWarehouse -> App [WarehouseStock]
 all' session sortWarehouses limit offset filters = do
         warehouses <- findAll' sortWarehouses limit offset filters
         return $ transformAll' warehouses
-
-show' :: MadisonAuthData -> Int -> App (Entity Warehouse)
-show' showUser id = do
-    user           <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
-    maybeWarehouse <- runDb (selectFirst [WarehouseScopedId ==. id, WarehouseUserId ==. entityKey user] [])
-    getWarehouse maybeWarehouse
 
 insert' :: MadisonAuthData -> CrudWarehouse -> App Int
 insert' showUser crudWarehouse = do
@@ -127,10 +119,6 @@ delete' showUser id = do
     user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
     runDb $ deleteWhere [WarehouseScopedId ==. id, WarehouseUserId ==. entityKey user]
     return id
-
-getWarehouse :: Maybe (Entity Warehouse) -> App (Entity Warehouse)
-getWarehouse Nothing           = throwError err404
-getWarehouse (Just warehouse') = return warehouse'
 
 getSortField :: E.SqlExpr (Entity Warehouse) -> SortWarehouse -> E.SqlExpr E.OrderBy
 getSortField warehouses SWarehouseNameAsc       = E.asc  $ warehouses E.^. WarehouseName

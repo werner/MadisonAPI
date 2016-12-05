@@ -46,11 +46,10 @@ import           SpecSupport
 type MadisonAuthReq = AuthenticateReq MadisonAuthProtect
 
 getAll       :: MadisonAuthReq -> [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> FilterWarehouse -> Manager -> BaseUrl -> ClientM [WarehouseStock]
-getShow      :: MadisonAuthReq -> Int -> Manager -> BaseUrl -> ClientM (P.Entity Warehouse)
 postInsert   :: MadisonAuthReq -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int
 putUpdate    :: MadisonAuthReq -> Int -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int
 deleteDelete :: MadisonAuthReq -> Int -> Manager -> BaseUrl -> ClientM Int
-getAll :<|> getShow :<|> postInsert :<|> putUpdate :<|> deleteDelete = client apiSpec
+getAll :<|> postInsert :<|> putUpdate :<|> deleteDelete = client apiSpec
 
 apiSpec :: Proxy Api.Warehouse.API
 apiSpec = Proxy
