@@ -64,6 +64,11 @@ executable madison-api-exe
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , madison-api
+                     , bytestring
+                     , case-insensitive 
+                     , wai
+                     , wai-extra
+                     , wai-cors
                      , persistent            ==2.2.4.1
                      , persistent-postgresql ==2.2.2
                      , persistent-template   ==2.1.8.1
@@ -94,6 +99,7 @@ test-suite madison-api-test
                      , safe
                      , wai
                      , wai-extra
+                     , wai-cors
                      , case-insensitive 
                      , warp
                      , servant
