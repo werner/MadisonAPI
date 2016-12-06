@@ -26,6 +26,7 @@ library
                      , servant-auth-cookie
                      , wai
                      , wai-extra
+                     , wai-cors
                      , case-insensitive 
                      , mtl
                      , warp
