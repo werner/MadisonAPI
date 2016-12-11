@@ -20,6 +20,7 @@ library
                      , Formula.Evaluator, Formula.Parser, Formula.Types, Formula.Functions
   build-depends:       base >= 4.7 && < 5
                      , aeson
+                     , bcrypt
                      , servant
                      , servant-server
                      , cookie
