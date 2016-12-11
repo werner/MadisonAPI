@@ -33,8 +33,10 @@ authenticate user = do
              uuid    <- generateUUID user
              session <- runDb (selectFirst [SessionUserId ==. entityKey user] [])
              case session of
-                 Just s -> runDb $ delete $ entityKey s
-             runDb (insert $ Session (entityKey user) uuid)
+                 Just s  -> do
+                     runDb $ delete $ entityKey s
+                     runDb $ insert $ Session (entityKey user) uuid
+                 Nothing -> runDb $ insert $ Session (entityKey user) uuid
              return $ Api.User.ShowUser uuid (userEmail $ entityVal user)
 
 generateUUID :: (MonadReader Config App, MonadIO App) => Entity User -> App String
