@@ -32,16 +32,17 @@ import           Models
 
 import           Api.Types
 import           Api.Authentication
+import           Api.Session
 import           Api.User
 import qualified Api.Warehouse               as WarehouseApi
 import qualified Api.Register                as Register
 
-type API = Register.API :<|> Api.User.API :<|> WarehouseApi.API
+type API = Api.Session.API :<|> Register.API :<|> Api.User.API :<|> WarehouseApi.API
 
 type instance AuthServerData (AuthProtect "madison-auth") = Api.User.ShowUser
 
 server :: ServerT Api.API App
-server = Register.server :<|> Api.User.server :<|> WarehouseApi.server
+server = Api.Session.server :<|> Register.server :<|> Api.User.server :<|> WarehouseApi.server
 
 appToServer :: Config -> Server Api.API
 appToServer cfg = enter (convertApp cfg) Api.server

@@ -5,6 +5,7 @@
 module Config where
 
 import           Control.Exception                    (throwIO)
+import           Control.Monad.Catch                  (MonadThrow)
 import           Control.Monad.Except                 (ExceptT, MonadError)
 import           Control.Monad.Logger                 (runNoLoggingT,
                                                        runStdoutLoggingT)
@@ -26,7 +27,7 @@ newtype App a
     = App
     { runApp :: ReaderT Config (ExceptT ServantErr IO) a
     } deriving ( Functor, Applicative, Monad, MonadReader Config,
-                 MonadError ServantErr, MonadIO)
+                 MonadError ServantErr, MonadIO, MonadThrow )
 
 data Config
     = Config
