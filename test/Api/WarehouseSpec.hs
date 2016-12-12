@@ -6,25 +6,18 @@ module Api.WarehouseSpec (main, spec) where
 import qualified Data.ByteString.Char8            as C
 import           Data.ByteString                  (ByteString)
 import           Data.CaseInsensitive             as CI
+import qualified Database.Persist.Postgresql      as P
 
 import           Test.Hspec
 import           Test.Hspec.Wai
 import           Test.Hspec.Wai.JSON
-import           Data.Aeson                       (Value(..), object, (.=), ToJSON, encode)
 import           Network.HTTP.Client              (Manager, newManager, defaultManagerSettings)
 import           Network.HTTP.Types
 import           Network.Wai                      (Application, Request)
 import           Network.Wai.Handler.Warp
 import           Network.Wai.Test                 (SResponse)
 import           Servant
-import           Servant.Server                   (BasicAuthCheck (BasicAuthCheck), 
-                                                   serveWithContext, Context, Context ((:.), EmptyContext))
-
-import           Servant.Server.Experimental.Auth (AuthHandler)
 import           Servant.Client
-import qualified Database.Persist.Postgresql       as P
-import           Data.Text                         (Text)
-import           Data.Int                          (Int64)
 
 import           Models
 import           Api

@@ -5,13 +5,17 @@
 module SpecSupport ( module Debug.Trace 
                    , module Control.Exception
                    , module Control.Monad
+                   , module P
                    , ExceptT, MonadError, runExceptT, MonadIO, MonadReader, ReaderT, ask, runReaderT
                    , App, runApp, Config (..), Environment (..), convertApp, makePool, setLogger
+                   , Value(..), object, (.=), ToJSON, encode, Int64
+                   , serveWithContext, Context, Context ((:.), EmptyContext)
                    , authServerContextSpec, deleteJson, putJson, postJson, setupDB, createUser) where
 
 import           Control.Monad
 import           Control.Exception
 import           Debug.Trace
+import           Data.Int                          (Int64)
 import           Data.List                         as L
 import           Data.Text                         as T
 import qualified Data.ByteString.Char8             as C
@@ -22,12 +26,12 @@ import           Control.Monad.Reader              (MonadIO, MonadReader, Reader
 import           Database.Persist.Sql              (SqlPersistM, SqlBackend, runSqlPersistMPool, rawExecute, 
                                                     rawSql, unSingle, connEscapeName)
 
+import           Data.Aeson                        (Value(..), object, (.=), ToJSON, encode)
 import           Control.Monad.Reader              (MonadIO, MonadReader, ReaderT, ask, runReaderT)
 import           Control.Monad.Except              (ExceptT, MonadError, runExceptT)
 import           Test.Hspec
 import           Test.Hspec.Wai
 import           Test.Hspec.Wai.JSON
-import           Data.Aeson                        (Value(..), object, (.=), ToJSON, encode)
 import           Network.HTTP.Types
 import           Network.Wai                       (Application, Request)
 import           Network.Wai.Test                  (SResponse)
