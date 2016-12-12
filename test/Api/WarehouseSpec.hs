@@ -7,7 +7,6 @@ import qualified Data.ByteString.Char8            as C
 import           Data.ByteString                  (ByteString)
 import           Data.CaseInsensitive             as CI
 
-import           Control.Exception
 import           Test.Hspec
 import           Test.Hspec.Wai
 import           Test.Hspec.Wai.JSON
@@ -26,9 +25,6 @@ import           Servant.Client
 import qualified Database.Persist.Postgresql       as P
 import           Data.Text                         (Text)
 import           Data.Int                          (Int64)
-import           Control.Monad.Reader              (MonadIO, MonadReader, ReaderT, ask, runReaderT)
-import           Control.Monad.Except              (ExceptT, MonadError, runExceptT)
-import           Control.Monad
 
 import           Config                            (App, runApp, Config (..), Environment (..), 
                                                     convertApp, makePool, setLogger)

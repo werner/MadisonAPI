@@ -3,9 +3,14 @@
 {-# LANGUAGE TypeOperators        #-}
 
 module SpecSupport ( module Debug.Trace 
+                   , module Control.Exception
+                   , module Control.Monad
+                   , ExceptT, MonadError, runExceptT, MonadIO, MonadReader, ReaderT, ask, runReaderT
                    , authServerContextSpec, deleteJson, putJson, postJson, setupDB, createUser) where
 
 
+import           Control.Monad
+import           Control.Exception
 import           Debug.Trace
 import           Data.List                         as L
 import           Data.Text                         as T
@@ -17,6 +22,8 @@ import           Control.Monad.Reader              (MonadIO, MonadReader, Reader
 import           Database.Persist.Sql              (SqlPersistM, SqlBackend, runSqlPersistMPool, rawExecute, 
                                                     rawSql, unSingle, connEscapeName)
 
+import           Control.Monad.Reader              (MonadIO, MonadReader, ReaderT, ask, runReaderT)
+import           Control.Monad.Except              (ExceptT, MonadError, runExceptT)
 import           Test.Hspec
 import           Test.Hspec.Wai
 import           Test.Hspec.Wai.JSON
