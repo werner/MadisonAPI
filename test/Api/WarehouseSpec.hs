@@ -3,7 +3,6 @@
 {-# LANGUAGE TypeOperators              #-}
 module Api.WarehouseSpec (main, spec) where
 
-import           Debug.Trace
 import qualified Data.ByteString.Char8            as C
 import           Data.ByteString                  (ByteString)
 import           Data.CaseInsensitive             as CI
@@ -102,12 +101,6 @@ appSpec = do
     pool <- makePool Test
     let cfg = Config { getPool = pool, getEnv = Test }
     return $ serveWithContext apiSpec authServerContextSpec (appToServerSpec cfg)
-
-createUser :: String -> IO Api.User.ShowUser
-createUser email = do
-        pool <- makePool Test
-        user' <- P.runSqlPool (P.insert $ User email "12345" Nothing Nothing) pool
-        return $ Api.User.ShowUser "1234" email
 
 createWarehouse :: String -> IO (P.Entity Warehouse)
 createWarehouse name = do

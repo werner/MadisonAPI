@@ -2,8 +2,11 @@
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE TypeOperators        #-}
 
-module SpecSupport where
+module SpecSupport ( module Debug.Trace 
+                   , authServerContextSpec, deleteJson, putJson, postJson, setupDB, createUser) where
 
+
+import           Debug.Trace
 import           Data.List                         as L
 import           Data.Text                         as T
 import qualified Data.ByteString.Char8             as C
@@ -73,3 +76,10 @@ deleteJson path =
 
 authServerContextSpec :: Context (AuthHandler Request Api.User.ShowUser ': '[])
 authServerContextSpec = authHandler :. EmptyContext
+
+createUser :: String -> IO Api.User.ShowUser
+createUser email = do
+        pool <- makePool Test
+        user' <- P.runSqlPool (P.insert $ User email "12345" Nothing Nothing) pool
+        return $ Api.User.ShowUser "1234" email
+
