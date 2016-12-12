@@ -9,6 +9,9 @@ module SpecSupport ( module Debug.Trace
                    , App, runApp, Config (..), Environment (..), convertApp, makePool, setLogger
                    , Value(..), object, (.=), ToJSON, encode, Int64
                    , serveWithContext, Context ((:.), EmptyContext)
+                   , Spec, hspec, describe, it
+                   , shouldRespondWith, request, with, liftIO
+                   , json
                    , fromSqlKey, entityKey, runSqlPool, selectFirst, (==.), insert, Entity(..)
                    , authServerContextSpec, deleteJson, putJson, postJson, setupDB, createUser) where
 
@@ -28,9 +31,9 @@ import           Database.Persist.Sql              (SqlPersistM, SqlBackend, run
 import           Data.Aeson                        (Value(..), object, (.=), ToJSON, encode)
 import           Control.Monad.Reader              (MonadIO, MonadReader, ReaderT, ask, runReaderT)
 import           Control.Monad.Except              (ExceptT, MonadError, runExceptT)
-import           Test.Hspec
-import           Test.Hspec.Wai
-import           Test.Hspec.Wai.JSON
+import           Test.Hspec                        (Spec, hspec, describe, it)
+import           Test.Hspec.Wai                    (WaiSession, shouldRespondWith, request, with, liftIO)
+import           Test.Hspec.Wai.JSON               (json)
 import           Network.HTTP.Types
 import           Network.Wai                       (Application, Request)
 import           Network.Wai.Test                  (SResponse)

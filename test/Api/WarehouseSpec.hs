@@ -7,14 +7,8 @@ import qualified Data.ByteString.Char8            as C
 import           Data.ByteString                  (ByteString)
 import           Data.CaseInsensitive             as CI
 
-import           Test.Hspec
-import           Test.Hspec.Wai
-import           Test.Hspec.Wai.JSON
 import           Network.HTTP.Client              (Manager, newManager, defaultManagerSettings)
-import           Network.HTTP.Types
 import           Network.Wai                      (Application, Request)
-import           Network.Wai.Handler.Warp
-import           Network.Wai.Test                 (SResponse)
 import           Servant
 import           Servant.Client
 
