@@ -6,8 +6,8 @@ module SpecSupport ( module Debug.Trace
                    , module Control.Exception
                    , module Control.Monad
                    , ExceptT, MonadError, runExceptT, MonadIO, MonadReader, ReaderT, ask, runReaderT
+                   , App, runApp, Config (..), Environment (..), convertApp, makePool, setLogger
                    , authServerContextSpec, deleteJson, putJson, postJson, setupDB, createUser) where
-
 
 import           Control.Monad
 import           Control.Exception
@@ -36,9 +36,9 @@ import           Servant.Server                    (BasicAuthCheck (BasicAuthChe
                                                     serveWithContext, Context, Context ((:.), EmptyContext))
 import           Servant.Server.Experimental.Auth  (AuthHandler)
 
-import           Config
+import           Config                            (App, runApp, Config (..), Environment (..), 
+                                                    convertApp, makePool, setLogger)
 import           Models
-import           Debug.Trace
 import           Api.Authentication
 import           Api.User 
 

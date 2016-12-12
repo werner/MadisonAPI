@@ -26,8 +26,6 @@ import qualified Database.Persist.Postgresql       as P
 import           Data.Text                         (Text)
 import           Data.Int                          (Int64)
 
-import           Config                            (App, runApp, Config (..), Environment (..), 
-                                                    convertApp, makePool, setLogger)
 import           Models
 import           Api
 import           Api.Types
