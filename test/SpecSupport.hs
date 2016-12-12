@@ -5,18 +5,17 @@
 module SpecSupport ( module Debug.Trace 
                    , module Control.Exception
                    , module Control.Monad
-                   , module P
                    , ExceptT, MonadError, runExceptT, MonadIO, MonadReader, ReaderT, ask, runReaderT
                    , App, runApp, Config (..), Environment (..), convertApp, makePool, setLogger
                    , Value(..), object, (.=), ToJSON, encode, Int64
-                   , serveWithContext, Context, Context ((:.), EmptyContext)
+                   , serveWithContext, Context ((:.), EmptyContext)
+                   , fromSqlKey, entityKey, runSqlPool, selectFirst, (==.), insert, Entity(..)
                    , authServerContextSpec, deleteJson, putJson, postJson, setupDB, createUser) where
 
 import           Control.Monad
 import           Control.Exception
 import           Debug.Trace
 import           Data.Int                          (Int64)
-import           Data.List                         as L
 import           Data.Text                         as T
 import qualified Data.ByteString.Char8             as C
 import           Data.ByteString                   (ByteString)
@@ -35,7 +34,8 @@ import           Test.Hspec.Wai.JSON
 import           Network.HTTP.Types
 import           Network.Wai                       (Application, Request)
 import           Network.Wai.Test                  (SResponse)
-import qualified Database.Persist.Postgresql       as P
+import           Database.Persist.Postgresql       (fromSqlKey, entityKey, runSqlPool, selectFirst, (==.)
+                                                   , insert, Entity(..))
 import           Servant.Server                    (BasicAuthCheck (BasicAuthCheck), 
                                                     serveWithContext, Context, Context ((:.), EmptyContext))
 import           Servant.Server.Experimental.Auth  (AuthHandler)
@@ -65,10 +65,10 @@ getTables = do
 setupDB :: IO (Key Session)
 setupDB = do
     pool <- makePool Test
-    P.runSqlPool doMigrations pool
-    P.runSqlPool wipeDB pool
-    loggedIn <- P.runSqlPool (P.insert $ User "logged_user@user.com" "12345" Nothing Nothing) pool 
-    P.runSqlPool (P.insert $ Session loggedIn "key-test") pool 
+    runSqlPool doMigrations pool
+    runSqlPool wipeDB pool
+    loggedIn <- runSqlPool (insert $ User "logged_user@user.com" "12345" Nothing Nothing) pool 
+    runSqlPool (insert $ Session loggedIn "key-test") pool 
 
 postJson :: (ToJSON a) => ByteString -> a -> WaiSession SResponse
 postJson path =
@@ -91,6 +91,6 @@ authServerContextSpec = authHandler :. EmptyContext
 createUser :: String -> IO Api.User.ShowUser
 createUser email = do
         pool <- makePool Test
-        user' <- P.runSqlPool (P.insert $ User email "12345" Nothing Nothing) pool
+        user' <- runSqlPool (insert $ User email "12345" Nothing Nothing) pool
         return $ Api.User.ShowUser "1234" email
 

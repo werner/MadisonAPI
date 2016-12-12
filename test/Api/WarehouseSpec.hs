@@ -6,7 +6,6 @@ module Api.WarehouseSpec (main, spec) where
 import qualified Data.ByteString.Char8            as C
 import           Data.ByteString                  (ByteString)
 import           Data.CaseInsensitive             as CI
-import qualified Database.Persist.Postgresql      as P
 
 import           Test.Hspec
 import           Test.Hspec.Wai
@@ -64,13 +63,13 @@ spec = with appSpec $ do
 
         it "updates a warehouse" $ do
           warehouse <- liftIO $ createWarehouse "Second"
-          let id    = P.fromSqlKey $ P.entityKey warehouse
+          let id    = fromSqlKey $ entityKey warehouse
           let path  = "/warehouses/" ++ (show id)
           putJson (C.pack path) (CrudWarehouse "Third") `shouldRespondWith` 200
 
         it "deletes a warehouse" $ do
           warehouse <- liftIO $ createWarehouse "first"
-          let id    = P.fromSqlKey $ P.entityKey warehouse
+          let id    = fromSqlKey $ entityKey warehouse
           let path  = "/warehouses/" ++ (show id)
           deleteJson (C.pack path) `shouldRespondWith` 200
 
@@ -89,16 +88,16 @@ appSpec = do
     let cfg = Config { getPool = pool, getEnv = Test }
     return $ serveWithContext apiSpec authServerContextSpec (appToServerSpec cfg)
 
-createWarehouse :: String -> IO (P.Entity Warehouse)
+createWarehouse :: String -> IO (Entity Warehouse)
 createWarehouse name = do
         pool <- makePool Test
-        user <- P.runSqlPool (P.selectFirst [UserEmail P.==. "logged_user@user.com"] []) pool
-        P.runSqlPool (P.insert $ Warehouse name (P.entityKey $ getUserFromMaybe user) 1 Nothing Nothing) pool
-        warehouse <- P.runSqlPool (P.selectFirst [WarehouseName P.==. name] []) pool
+        user <- runSqlPool (selectFirst [UserEmail ==. "logged_user@user.com"] []) pool
+        runSqlPool (insert $ Warehouse name (entityKey $ getUserFromMaybe user) 1 Nothing Nothing) pool
+        warehouse <- runSqlPool (selectFirst [WarehouseName ==. name] []) pool
         case warehouse of
             Just w  -> return $ w
             Nothing -> throw err404
 
-getUserFromMaybe :: (Maybe (P.Entity User)) -> (P.Entity User)
+getUserFromMaybe :: (Maybe (Entity User)) -> (Entity User)
 getUserFromMaybe (Just user) = user
 getUserFromMaybe Nothing     = throw err404
