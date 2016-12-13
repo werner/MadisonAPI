@@ -115,5 +115,5 @@ createUser email = do
         let encryptPassword password = (fromMaybe $ C.pack "") <$> 
                                         (hashPasswordUsingPolicy fastBcryptHashingPolicy $ C.pack password)
         cryptPasswd <- encryptPassword "123456"
-        user' <- runSqlPool (insert $ User email (C.unpack cryptPasswd) Nothing Nothing) pool
+        user' <- runSqlPool (insert $ User email (C.unpack cryptPasswd) Nothing Nothing Nothing Nothing) pool
         return $ Api.User.ShowUser "123456" email

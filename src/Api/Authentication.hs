@@ -45,7 +45,7 @@ authenticate user = do
          Just user -> do
              case validatePassword (C.pack $ userPassword $ entityVal user) (C.pack password) of
                  True -> do
-                     uuid    <- generateUUID user
+                     uuid    <- generateUUID
                      session <- runDb (selectFirst [SessionUserId ==. entityKey user] [])
                      case session of
                          Just s  -> do
@@ -58,8 +58,8 @@ authenticate user = do
 
                  False -> throwError (err500 { errReasonPhrase = "password doesn't match" })
 
-generateUUID :: (MonadReader Config App, MonadIO App) => Entity User -> App String
-generateUUID user = do
+generateUUID :: (MonadReader Config App, MonadIO App) => App String
+generateUUID = do
           uuid <- liftIO nextRandom
           return $ toString uuid
         

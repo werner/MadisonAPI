@@ -1,6 +1,8 @@
 User json sql=users
     email String
     password String
+    confirmationToken String Maybe
+    confirmationTokenExpiration UTCTime Maybe
     createdAt UTCTime Maybe
     updatedAt UTCTime Maybe
     UniqueUserEmail email
