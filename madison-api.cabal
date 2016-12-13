@@ -84,6 +84,7 @@ test-suite madison-api-test
   main-is:             Spec.hs
   build-depends:       base
                      , madison-api
+                     , bcrypt
                      , hspec
                      , containers
                      , hspec-wai

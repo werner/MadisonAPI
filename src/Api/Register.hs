@@ -36,6 +36,6 @@ register :: RegisterUser -> App Int64
 register user
         | (rePassword user) == (rePasswordConfirmation user) = do
             cryptPasswd <- encryptPassword $ rePassword user
-            user' <- runDb $ insert $ User (reEmail user) (C.unpack cryptPasswd) Nothing Nothing
+            user'       <- runDb $ insert $ User (reEmail user) (C.unpack cryptPasswd) Nothing Nothing
             return $ fromSqlKey user'
         | otherwise = throw $ PasswordNotMatch $ "password doesn't match with confirmation"

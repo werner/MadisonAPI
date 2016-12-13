@@ -5,6 +5,7 @@
 module SpecSupport ( module Debug.Trace 
                    , module Control.Exception
                    , module Control.Monad
+                   , module Data.Maybe
                    , module Servant.API.Alternative
                    , module Models
                    , module Api.Types
@@ -19,10 +20,11 @@ module SpecSupport ( module Debug.Trace
                    , Server, ServerT, Proxy(..), enter, err404
                    , client, ClientM, BaseUrl, AuthenticateReq
                    , Manager, newManager, defaultManagerSettings
-                   , Application, Request 
+                   , Application, Request
                    , authServerContextSpec, deleteJson, putJson, postJson, setupDB, createUser) where
 
 import           Control.Monad
+import           Data.Maybe
 import           Control.Exception
 import           Debug.Trace
 import           Data.Int                          (Int64)
@@ -54,6 +56,8 @@ import           Servant.Client                    (client, ClientM, BaseUrl, Au
 import           Servant.API.Alternative
 import           Network.HTTP.Client               (Manager, newManager, defaultManagerSettings)
 import           Network.Wai                       (Application, Request)
+import           Crypto.BCrypt                     (hashPasswordUsingPolicy, fastBcryptHashingPolicy
+                                                   , validatePassword)
 
 
 import           Config                            (App, runApp, Config(..), Environment(..), 
@@ -108,6 +112,8 @@ authServerContextSpec = authHandler :. EmptyContext
 createUser :: String -> IO Api.User.ShowUser
 createUser email = do
         pool <- makePool Test
-        user' <- runSqlPool (insert $ User email "12345" Nothing Nothing) pool
-        return $ Api.User.ShowUser "1234" email
-
+        let encryptPassword password = (fromMaybe $ C.pack "") <$> 
+                                        (hashPasswordUsingPolicy fastBcryptHashingPolicy $ C.pack password)
+        cryptPasswd <- encryptPassword "123456"
+        user' <- runSqlPool (insert $ User email (C.unpack cryptPasswd) Nothing Nothing) pool
+        return $ Api.User.ShowUser "123456" email

@@ -8,7 +8,8 @@ module Api.Authentication where
 import           Control.Exception                (Exception, throw)
 import           Data.Typeable                    (Typeable)
 import           Data.Maybe                       (fromMaybe)
-import           Crypto.BCrypt                    (hashPasswordUsingPolicy, fastBcryptHashingPolicy, validatePassword)
+import           Crypto.BCrypt                    (hashPasswordUsingPolicy, fastBcryptHashingPolicy
+                                                  , validatePassword)
 
 import           Control.Monad.Reader.Class       (MonadReader)
 import           Control.Monad.Except             (throwError)
