@@ -5,6 +5,9 @@
 module SpecSupport ( module Debug.Trace 
                    , module Control.Exception
                    , module Control.Monad
+                   , module Servant.API.Alternative
+                   , module Models
+                   , module Api.Types
                    , ExceptT, MonadError, runExceptT, MonadIO, MonadReader, ReaderT, ask, runReaderT
                    , App, runApp, Config (..), Environment (..), convertApp, makePool, setLogger
                    , Value(..), object, (.=), ToJSON, encode, Int64
@@ -12,7 +15,11 @@ module SpecSupport ( module Debug.Trace
                    , Spec, hspec, describe, it
                    , shouldRespondWith, request, with, liftIO
                    , json
-                   , fromSqlKey, entityKey, runSqlPool, selectFirst, (==.), insert, Entity(..)
+                   , fromSqlKey, runSqlPool, selectFirst, (==.), insert, Entity(..)
+                   , Server, ServerT, Proxy(..), enter, err404
+                   , client, ClientM, BaseUrl, AuthenticateReq
+                   , Manager, newManager, defaultManagerSettings
+                   , Application, Request 
                    , authServerContextSpec, deleteJson, putJson, postJson, setupDB, createUser) where
 
 import           Control.Monad
@@ -42,10 +49,17 @@ import           Database.Persist.Postgresql       (fromSqlKey, entityKey, runSq
 import           Servant.Server                    (BasicAuthCheck (BasicAuthCheck), 
                                                     serveWithContext, Context, Context ((:.), EmptyContext))
 import           Servant.Server.Experimental.Auth  (AuthHandler)
+import           Servant                           (Server, ServerT, Proxy(..), enter, err404)
+import           Servant.Client                    (client, ClientM, BaseUrl, AuthenticateReq)
+import           Servant.API.Alternative
+import           Network.HTTP.Client               (Manager, newManager, defaultManagerSettings)
+import           Network.Wai                       (Application, Request)
 
-import           Config                            (App, runApp, Config (..), Environment (..), 
+
+import           Config                            (App, runApp, Config(..), Environment(..), 
                                                     convertApp, makePool, setLogger)
 import           Models
+import           Api.Types
 import           Api.Authentication
 import           Api.User 
 

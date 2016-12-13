@@ -7,18 +7,7 @@ import qualified Data.ByteString.Char8            as C
 import           Data.ByteString                  (ByteString)
 import           Data.CaseInsensitive             as CI
 
-import           Network.HTTP.Client              (Manager, newManager, defaultManagerSettings)
-import           Network.Wai                      (Application, Request)
-import           Servant
-import           Servant.Client
-
-import           Models
-import           Api
-import           Api.Types
-import           Api.Authentication
-import           Api.User 
 import           Api.Warehouse
-import           Api.Register
 
 import           SpecSupport
 
