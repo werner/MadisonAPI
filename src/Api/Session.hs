@@ -14,7 +14,7 @@ import           Web.Cookie                               (def)
 import           Crypto.Random                            (drgNew)
 import           Data.ByteString                          (ByteString)
 
-import           Api.Authentication
+import           Lib.Authentication
 import           Api.User
 import           Config
 import           Models

@@ -64,8 +64,8 @@ import           Config                            (App, runApp, Config(..), Env
                                                     convertApp, makePool, setLogger)
 import           Models
 import           Api.Types
-import           Api.Authentication
 import           Api.User 
+import           Lib.Authentication
 
 wipeDB :: ReaderT SqlBackend IO ()
 wipeDB = do
@@ -88,7 +88,7 @@ setupDB = do
     pool <- makePool Test
     runSqlPool doMigrations pool
     runSqlPool wipeDB pool
-    loggedIn <- runSqlPool (insert $ User "logged_user@user.com" "12345" Nothing Nothing) pool 
+    loggedIn <- createUser  "logged_user@user.com"
     runSqlPool (insert $ Session loggedIn "key-test") pool 
 
 postJson :: (ToJSON a) => ByteString -> a -> WaiSession SResponse
@@ -109,11 +109,10 @@ deleteJson path =
 authServerContextSpec :: Context (AuthHandler Request Api.User.ShowUser ': '[])
 authServerContextSpec = authHandler :. EmptyContext
 
-createUser :: String -> IO Api.User.ShowUser
+createUser :: String -> IO (Key User)
 createUser email = do
         pool <- makePool Test
         let encryptPassword password = (fromMaybe $ C.pack "") <$> 
                                         (hashPasswordUsingPolicy fastBcryptHashingPolicy $ C.pack password)
         cryptPasswd <- encryptPassword "123456"
-        user' <- runSqlPool (insert $ User email (C.unpack cryptPasswd) Nothing Nothing Nothing Nothing) pool
-        return $ Api.User.ShowUser "123456" email
+        runSqlPool (insert $ User email (C.unpack cryptPasswd) Nothing Nothing Nothing Nothing) pool

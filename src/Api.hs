@@ -30,8 +30,8 @@ import           Servant.Server.Experimental.Auth (AuthHandler, AuthServerData,
 import           Config                      (App (..), Config (..), convertApp)
 import           Models
 
+import           Lib.Authentication
 import           Api.Types
-import           Api.Authentication
 import           Api.Session
 import           Api.User
 import qualified Api.Warehouse               as WarehouseApi

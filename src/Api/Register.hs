@@ -26,7 +26,7 @@ import           Database.Persist.Postgresql (fromSqlKey, insert, updateWhere, s
 import           Config                      (App (..), Config (..))
 import           Models
 import           Api.User
-import           Api.Authentication
+import           Lib.Authentication
 
 data RegisterUser = RegisterUser { reEmail                :: String
                                  , rePassword             :: String 

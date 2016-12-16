@@ -3,7 +3,7 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Api.Authentication where
+module Lib.Authentication where
 
 import           Control.Exception                (Exception, throw)
 import           Data.Typeable                    (Typeable)
@@ -51,11 +51,8 @@ authenticate user = do
                          Just s  -> do
                              runDb $ delete $ entityKey s
                              runDb $ insert $ Session (entityKey user) uuid
-
                          Nothing -> runDb $ insert $ Session (entityKey user) uuid
-
                      return $ Api.User.ShowUser uuid (userEmail $ entityVal user)
-
                  False -> throwError (err500 { errReasonPhrase = "password doesn't match" })
 
 generateUUID :: (MonadReader Config App, MonadIO App) => App String
