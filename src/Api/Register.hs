@@ -40,7 +40,8 @@ instance ToJSON   RegisterUser
 instance FromJSON RegisterUser
 
 type API =  "register"     :> ReqBody '[JSON] RegisterUser :> Post '[JSON] String
-       :<|> "confirmation" :> Capture "token" String       :> Get  '[JSON] String
+       :<|> "confirmation" :> Capture "email" String       
+                           :> Capture "token" String       :> Get  '[JSON] String
 
 server :: ServerT Api.Register.API App
 server = register :<|> confirmation
@@ -58,8 +59,15 @@ register user
             return uuid
         | otherwise = throw $ PasswordNotMatch $ "password doesn't match with confirmation"
 
-confirmation :: String -> App String
-confirmation token = undefined
+confirmation :: String -> String -> App String
+confirmation email token = do
+    maybeUser <- runDb (selectFirst [UserEmail ==. email, UserConfirmationToken ==. Just token] [])
+    case maybeUser of
+        Nothing   -> throwError err404
+        Just user -> do 
+            runDb $ updateWhere [UserEmail ==. email] [UserConfirmationToken =. Nothing, 
+                                                    UserConfirmationTokenExpiration =. Nothing]
+            return "Confirmation Successful"
 
 expirationDate :: IO UTCTime
 expirationDate = do
