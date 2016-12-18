@@ -108,3 +108,6 @@ getPort = lookupSetting "MADISON_PORT" 9090
 
 convertApp :: Config -> App :~> ExceptT ServantErr IO
 convertApp cfg = Nat (flip runReaderT cfg . runApp)
+
+getHost :: String
+getHost = "https://madisonerp.com/"

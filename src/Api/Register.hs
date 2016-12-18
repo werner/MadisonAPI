@@ -23,7 +23,7 @@ import           Servant.Server              (err404)
 import           Database.Persist.Postgresql (fromSqlKey, insert, updateWhere, selectFirst, entityVal,
                                              (==.), (!=.), (=.))
 
-import           Config                      (App (..), Config (..))
+import           Config                      (App (..), Config (..), getHost)
 import           Models
 import           Api.User
 import           Lib.Mail
@@ -84,9 +84,9 @@ sendConfirmationToken email = do
 
 bodyTextConfirmationEmail :: String -> String
 bodyTextConfirmationEmail uuid = 
-        "Thanks for registering, please got to https://madisonerp.com/" ++ uuid ++ " to confirm your subscription."
+        "Thanks for registering, please got to " ++ getHost ++ uuid ++ " to confirm your subscription."
 
 bodyHtmlConfirmationEmail :: String -> String
 bodyHtmlConfirmationEmail uuid = 
-        "Thanks for registering, please got to <a href='https://madisonerp.com/" ++ uuid ++ "'>" ++ 
-        "https://madisonerp.com/" ++ uuid ++ "</a> to confirm your subscription."
+        "Thanks for registering, please got to <a href='" ++ getHost ++ uuid ++ "'>" ++
+        getHost ++ uuid ++ "</a> to confirm your subscription."
