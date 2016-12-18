@@ -20,7 +20,7 @@ import qualified Data.ByteString.Char8       as C
 import           Servant                     ((:<|>)(..), (:>), ReqBody, JSON, Post, Get, ServerT, Capture)
 import           Servant.Server              (err404)
 
-import           Database.Persist.Postgresql (fromSqlKey, insert, updateWhere, selectFirst, 
+import           Database.Persist.Postgresql (fromSqlKey, insert, updateWhere, selectFirst, entityVal,
                                              (==.), (!=.), (=.))
 
 import           Config                      (App (..), Config (..))
@@ -78,5 +78,15 @@ sendConfirmationToken email = do
             user' <- runDb $ updateWhere [UserEmail ==. email] [UserConfirmationToken =. Just uuid, 
                                                                 UserConfirmationTokenExpiration =. Just date]
 
-            liftIO $ sendEmail (ToEmail email email)  "confirmation" "confirmation" "confirmation"
+            liftIO $ sendEmail (ToEmail (fullName $ entityVal user) email)  "Confirmation Email" 
+                               (bodyTextConfirmationEmail uuid) (bodyHtmlConfirmationEmail uuid)
             return uuid
+
+bodyTextConfirmationEmail :: String -> String
+bodyTextConfirmationEmail uuid = 
+        "Thanks for registering, please got to https://madisonerp.com/" ++ uuid ++ " to confirm your subscription."
+
+bodyHtmlConfirmationEmail :: String -> String
+bodyHtmlConfirmationEmail uuid = 
+        "Thanks for registering, please got to <a href='https://madisonerp.com/" ++ uuid ++ "'>" ++ 
+        "https://madisonerp.com/" ++ uuid ++ "</a> to confirm your subscription."

@@ -20,7 +20,7 @@ mail to subject bodyText bodyHtml = simpleMail from to cc bcc subject
                                      [plainTextPart bodyText, htmlPart bodyHtml]
 
 sendEmail :: ToEmail -> String -> String -> String -> IO ()
-sendEmail to subject bodyText bodyHtml = sendMail "madison.com" $ mail [Address (Just $ Text.pack $ toName to) 
+sendEmail to subject bodyText bodyHtml = sendMail "madisonerp.com" $ mail [Address (Just $ Text.pack $ toName to) 
                                                                                 (Text.pack $ toEmail to)] 
                                                                        (Text.pack subject) 
                                                                        (Lazy.pack bodyText) (Lazy.pack bodyHtml)

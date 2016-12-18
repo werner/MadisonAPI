@@ -7,6 +7,7 @@
 
 module Api.User where
 
+import           Data.Monoid
 import           GHC.Generics                            (Generic)
 import qualified Data.ByteString.Char8                   as C
 import           Data.Aeson                              (ToJSON, FromJSON)
@@ -64,3 +65,8 @@ getUserBySession (Just session) = do
         case maybeUser of
             Nothing   -> throwError err404
             Just user -> return user
+
+fullName :: User -> String
+fullName user = case (userFirstName user <> Just " " <> userLastName user) of
+                   Nothing        -> " "
+                   Just fullName' -> fullName'
