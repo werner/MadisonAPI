@@ -1,11 +1,14 @@
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Lib.Authentication where
 
 import           Control.Exception                (Exception, throw)
+import           GHC.Generics                     (Generic)
+import           Data.Aeson                       (ToJSON, FromJSON)
 import           Data.Typeable                    (Typeable)
 import           Data.Maybe                       (fromMaybe)
 import           Crypto.BCrypt                    (hashPasswordUsingPolicy, fastBcryptHashingPolicy
@@ -30,16 +33,22 @@ import           Config                           (App (..), Config (..), getCon
 import           Models
 import           Api.User
 
+data AuthUser = AuthUser { authEmail    :: String
+                         , authPassword :: String }
+                         deriving (Show, Read, Generic)
+
+instance ToJSON    AuthUser
+instance FromJSON  AuthUser
 
 data AuthenticationException = PasswordNotMatch String
                         deriving (Show, Typeable)
 
 instance Exception AuthenticationException
 
-authenticate :: User -> App Api.User.ShowUser
-authenticate user = do
-    let password = userPassword user
-    maybeUser <- runDb (selectFirst [UserEmail ==. userEmail user] [])
+authenticate :: AuthUser -> App Api.User.ShowUser
+authenticate au = do
+    let password = authPassword au
+    maybeUser <- runDb (selectFirst [UserEmail ==. authEmail au] [])
     case maybeUser of
          Nothing   -> throwError err404
          Just user -> do

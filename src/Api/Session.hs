@@ -19,12 +19,13 @@ import           Api.User
 import           Config
 import           Models
 
-type API = "login" :> ReqBody '[JSON] User :> Post '[JSON] (Headers '[Header "madison-auth" ByteString] Api.User.ShowUser)
+type API = "login" :> ReqBody '[JSON] AuthUser :> Post '[JSON] 
+                                                   (Headers '[Header "madison-auth" ByteString] Api.User.ShowUser)
 
 server :: ServerT Api.Session.API App
 server = login
 
-login :: (KnownSymbol e) => User -> App (Headers '[Header e ByteString] Api.User.ShowUser)
+login :: (KnownSymbol e) => AuthUser -> App (Headers '[Header e ByteString] Api.User.ShowUser)
 login user = do
         authenticated <- authenticate user
         sk <- mkServerKey 16 Nothing
