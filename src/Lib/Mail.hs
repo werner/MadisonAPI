@@ -5,8 +5,11 @@ module Lib.Mail where
 import           Network.Mail.SMTP 
 import           Network.Mail.Mime               (Mail)
 
-import qualified Data.Text.Internal          as Text
-import qualified Data.Text.Internal.Lazy     as Lazy
+import qualified Data.Text                       as Text
+import qualified Data.Text.Lazy                  as Lazy
+
+data ToEmail = ToEmail { toName  :: String
+                       , toEmail :: String  }
 
 from       = Address Nothing "madison@madison.com"
 cc         = []
@@ -16,5 +19,8 @@ mail :: [Address] -> Text.Text -> Lazy.Text -> Lazy.Text -> Mail
 mail to subject bodyText bodyHtml = simpleMail from to cc bcc subject 
                                      [plainTextPart bodyText, htmlPart bodyHtml]
 
-send :: [Address] -> Text.Text -> Lazy.Text -> Lazy.Text -> IO ()
-send to subject bodyText bodyHtml = sendMail "madison.com" $ mail to subject bodyText bodyHtml 
+send :: ToEmail -> String -> String -> String -> IO ()
+send to subject bodyText bodyHtml = sendMail "madison.com" $ mail [Address (Just $ Text.pack $ toName to) 
+                                                                           (Text.pack $ toEmail to)] 
+                                                                           (Text.pack subject) 
+                                                                           (Lazy.pack bodyText) (Lazy.pack bodyHtml)
