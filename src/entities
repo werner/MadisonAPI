@@ -1,11 +1,18 @@
 User json sql=users
     email String
     password String
+    firstName String Maybe
+    lastName String Maybe
+    companyId CompanyId Maybe
     confirmationToken String Maybe
     confirmationTokenExpiration UTCTime Maybe
     createdAt UTCTime Maybe
     updatedAt UTCTime Maybe
     UniqueUserEmail email
+    deriving Show
+
+Company json sql=companies
+    name String
     deriving Show
 
 Session json sql=sessions

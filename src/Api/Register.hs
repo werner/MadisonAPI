@@ -17,7 +17,7 @@ import           Data.Aeson                  (ToJSON, FromJSON)
 import           Data.Int                    (Int64)
 import qualified Data.ByteString.Char8       as C
 
-import           Servant                     ((:>), ReqBody, JSON, Post, ServerT)
+import           Servant                     ((:<|>)(..), (:>), ReqBody, JSON, Post, Get, ServerT, Capture)
 import           Servant.Server              (err404)
 
 import           Database.Persist.Postgresql (fromSqlKey, insert, updateWhere, selectFirst, 
@@ -26,19 +26,24 @@ import           Database.Persist.Postgresql (fromSqlKey, insert, updateWhere, s
 import           Config                      (App (..), Config (..))
 import           Models
 import           Api.User
+import           Lib.Mail
 import           Lib.Authentication
 
 data RegisterUser = RegisterUser { reEmail                :: String
+                                 , reFirstName            :: Maybe String
+                                 , reLastName             :: Maybe String
+                                 , reCompanyName          :: Maybe String
                                  , rePassword             :: String 
                                  , rePasswordConfirmation :: String} deriving (Show, Read, Generic)
 
 instance ToJSON   RegisterUser
 instance FromJSON RegisterUser
 
-type API = "register" :> ReqBody '[JSON] RegisterUser :> Post '[JSON] String
+type API =  "register"     :> ReqBody '[JSON] RegisterUser :> Post '[JSON] String
+       :<|> "confirmation" :> Capture "token" String       :> Get  '[JSON] String
 
 server :: ServerT Api.Register.API App
-server = register
+server = register :<|> confirmation
 
 register :: RegisterUser -> App String
 register user
@@ -47,9 +52,14 @@ register user
             uuid        <- generateUUID
             date        <- liftIO expirationDate
             user'       <- runDb $ insert $ User (reEmail user) (C.unpack cryptPasswd)
+                                                 (reFirstName user) (reLastName user) Nothing
                                                  (Just uuid) (Just date) Nothing Nothing
+            sendConfirmationToken $ reEmail user
             return uuid
         | otherwise = throw $ PasswordNotMatch $ "password doesn't match with confirmation"
+
+confirmation :: String -> App String
+confirmation token = undefined
 
 expirationDate :: IO UTCTime
 expirationDate = do
@@ -67,4 +77,6 @@ sendConfirmationToken email = do
             date  <- liftIO expirationDate
             user' <- runDb $ updateWhere [UserEmail ==. email] [UserConfirmationToken =. Just uuid, 
                                                                 UserConfirmationTokenExpiration =. Just date]
+
+            liftIO $ sendEmail (ToEmail email email)  "confirmation" "confirmation" "confirmation"
             return uuid
