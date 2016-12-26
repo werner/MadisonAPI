@@ -65,8 +65,8 @@ confirmation email token = do
     case maybeUser of
         Nothing   -> throwError err404
         Just user -> do 
-            runDb $ updateWhere [UserEmail ==. email] [UserConfirmationToken =. Nothing, 
-                                                    UserConfirmationTokenExpiration =. Nothing]
+            runDb $ updateWhere [UserEmail ==. email] [UserConfirmationToken           =. Nothing, 
+                                                       UserConfirmationTokenExpiration =. Nothing]
             return "Confirmation Successful"
 
 expirationDate :: IO UTCTime

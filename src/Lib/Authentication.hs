@@ -48,7 +48,9 @@ instance Exception AuthenticationException
 authenticate :: AuthUser -> App Api.User.ShowUser
 authenticate au = do
     let password = authPassword au
-    maybeUser <- runDb (selectFirst [UserEmail ==. authEmail au] [])
+    maybeUser <- runDb (selectFirst [UserEmail                       ==. authEmail au, 
+                                     UserConfirmationToken           ==. Nothing,
+                                     UserConfirmationTokenExpiration ==. Nothing] [])
     case maybeUser of
          Nothing   -> throwError err404
          Just user -> do
