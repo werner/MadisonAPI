@@ -5,7 +5,10 @@ packages:
 extra-deps:
 - esqueleto-2.4.3
 - persistent-2.2.4.1
+- persistent-audit-0.2.0.0
+- persistent-mongoDB-2.1.4
+- persistent-parser-0.1.0.2
 - persistent-postgresql-2.2.2
-- persistent-template-2.1.8.1
 - persistent-sqlite-2.2.1
+- persistent-template-2.1.8.1
 resolver: lts-7.9
