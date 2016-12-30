@@ -18,7 +18,7 @@ import           Data.Int                    (Int64)
 import qualified Data.ByteString.Char8       as C
 
 import           Servant                     ((:<|>)(..), (:>), ReqBody, JSON, Post, Get, ServerT, Capture)
-import           Servant.Server              (err404)
+import           Servant.Server              (err404, errReasonPhrase)
 
 import           Database.Persist.Postgresql (fromSqlKey, insert, updateWhere, selectFirst, entityVal,
                                              (==.), (!=.), (=.))
@@ -63,7 +63,7 @@ confirmation :: String -> String -> App String
 confirmation email token = do
     maybeUser <- runDb (selectFirst [UserEmail ==. email, UserConfirmationToken ==. Just token] [])
     case maybeUser of
-        Nothing   -> throwError err404
+        Nothing   -> throwError err404 { errReasonPhrase = "User Not Found in Database" }
         Just user -> do 
             runDb $ updateWhere [UserEmail ==. email] [UserConfirmationToken           =. Nothing, 
                                                        UserConfirmationTokenExpiration =. Nothing]
@@ -86,15 +86,21 @@ sendConfirmationToken email = do
             user' <- runDb $ updateWhere [UserEmail ==. email] [UserConfirmationToken =. Just uuid, 
                                                                 UserConfirmationTokenExpiration =. Just date]
 
+            bodyText <- bodyTextConfirmationEmail email uuid
+            bodyHtml <- bodyHtmlConfirmationEmail email uuid
             liftIO $ sendEmail (ToEmail (fullName $ entityVal user) email)  "Confirmation Email" 
-                               (bodyTextConfirmationEmail uuid) (bodyHtmlConfirmationEmail uuid)
+                               bodyText bodyHtml
             return uuid
 
-bodyTextConfirmationEmail :: String -> String
-bodyTextConfirmationEmail uuid = 
-        "Thanks for registering, please got to " ++ getHost ++ uuid ++ " to confirm your subscription."
+bodyTextConfirmationEmail :: String -> String -> App String
+bodyTextConfirmationEmail email uuid = do
+        host <- liftIO getHost
+        let fullHost = host ++ "confirmation/" ++ email ++ "/" ++ uuid
+        return $ "Thanks for registering, please go to " ++ fullHost ++ " to confirm your subscription."
 
-bodyHtmlConfirmationEmail :: String -> String
-bodyHtmlConfirmationEmail uuid = 
-        "Thanks for registering, please got to <a href='" ++ getHost ++ uuid ++ "'>" ++
-        getHost ++ uuid ++ "</a> to confirm your subscription."
+bodyHtmlConfirmationEmail :: String -> String -> App String
+bodyHtmlConfirmationEmail email uuid = do
+        host <- liftIO getHost
+        let fullHost = host ++ "confirmation/" ++ email ++ "/" ++ uuid
+        return $ "Thanks for registering, please go to <a href='" ++ fullHost ++ "'>" ++
+                 fullHost ++ "</a> to confirm your subscription."
