@@ -109,5 +109,16 @@ getPort = lookupSetting "MADISON_PORT" 9090
 convertApp :: Config -> App :~> ExceptT ServantErr IO
 convertApp cfg = Nat (flip runReaderT cfg . runApp)
 
-getHost :: String
-getHost = "https://madisonerp.com/"
+getHost :: IO String
+getHost = do
+        maybeHost <- lookupEnv "MADISON_HOST"
+        case maybeHost of
+            Just host -> return host
+            Nothing   -> return "http://localhost:9090/"
+
+getEmailAddress :: IO String
+getEmailAddress = do
+        maybeEmail <- lookupEnv "MADISON_MAIL"
+        case maybeEmail of
+            Just email -> return email
+            Nothing    -> return "madison@gmail.com"
