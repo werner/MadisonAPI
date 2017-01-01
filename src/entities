@@ -6,8 +6,6 @@ User json sql=users
     companyId CompanyId Maybe
     confirmationToken String Maybe
     confirmationTokenExpiration UTCTime Maybe
-    createdAt UTCTime Maybe
-    updatedAt UTCTime Maybe
     UniqueUserEmail email
     deriving Show
 
@@ -26,8 +24,6 @@ Product json sql=products
     description Text Maybe
     productType Int
     userId UserId
-    createdAt UTCTime Maybe
-    updatedAt UTCTime Maybe
     deriving Show
 
 Warehouse json sql=warehouses
@@ -35,14 +31,10 @@ Warehouse json sql=warehouses
     userId UserId
     scopedId Int
     UniqueWarehouseNameUserId name userId
-    createdAt UTCTime Maybe
-    updatedAt UTCTime Maybe
     deriving Show
 
 Stock json sql=stocks
     warehouseId WarehouseId
     productId ProductId
     amount Double
-    createdAt UTCTime Maybe
-    updatedAt UTCTime Maybe
     deriving Show
