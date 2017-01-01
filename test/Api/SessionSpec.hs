@@ -8,11 +8,12 @@ import           Data.ByteString                  (ByteString)
 import           Servant                          (Headers, Header)
 import           SpecSupport
 
+import           Lib.Authentication
 import           Api.User
 import           Models
 import           Api.Session
 
-logIn :: User -> Manager -> BaseUrl -> ClientM (Headers '[Header "madison-auth" ByteString] Api.User.ShowUser)
+logIn :: AuthUser -> Manager -> BaseUrl -> ClientM (Headers '[Header "madison-auth" ByteString] Api.User.ShowUser)
 logIn = client apiSpec
 
 apiSpec :: Proxy Api.Session.API
@@ -26,10 +27,7 @@ spec = with appSpec $ do
     describe "/login" $ do
         it "Log In" $ do
           warehouse <- liftIO $ createUser "admin@admin.com"
-          postJson (C.pack "/login") 
-                   (User "admin@admin.com" "123456" Nothing Nothing Nothing Nothing Nothing 
-                                                    Nothing Nothing) `shouldRespondWith` 200
-
+          postJson (C.pack "/login") (AuthUser "admin@admin.com" "123456") `shouldRespondWith` 200
 
 type APISpec = Api.Session.API
 

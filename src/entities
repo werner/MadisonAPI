@@ -33,6 +33,16 @@ Warehouse json sql=warehouses
     UniqueWarehouseNameUserId name userId
     deriving Show
 
+WarehouseAudit json sql=warehouses_audit
+    name String
+    userId UserId
+    scopedId Int
+    originalId WarehouseId noreference
+    auditAction AuditAction
+    editedBy Text
+    editedOn UTCTime
+    deriving Show
+
 Stock json sql=stocks
     warehouseId WarehouseId
     productId ProductId

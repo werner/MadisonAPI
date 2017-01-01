@@ -75,7 +75,7 @@ createWarehouse :: String -> IO (Entity Warehouse)
 createWarehouse name = do
         pool <- makePool Test
         user <- runSqlPool (selectFirst [UserEmail ==. "logged_user@user.com"] []) pool
-        runSqlPool (insert $ Warehouse name (entityKey $ getUserFromMaybe user) 1 Nothing Nothing) pool
+        runSqlPool (insert $ Warehouse name (entityKey $ getUserFromMaybe user) 1) pool
         warehouse <- runSqlPool (selectFirst [WarehouseName ==. name] []) pool
         case warehouse of
             Just w  -> return $ w

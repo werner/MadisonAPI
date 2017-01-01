@@ -54,7 +54,7 @@ register user
             date        <- liftIO expirationDate
             user'       <- runDb $ insert $ User (reEmail user) (C.unpack cryptPasswd)
                                                  (reFirstName user) (reLastName user) Nothing
-                                                 (Just uuid) (Just date) Nothing Nothing
+                                                 (Just uuid) (Just date)
             sendConfirmationToken $ reEmail user
             return uuid
         | otherwise = throw $ PasswordNotMatch $ "password doesn't match with confirmation"

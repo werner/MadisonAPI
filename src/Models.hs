@@ -32,6 +32,7 @@ import           Database.Esqueleto               (select, from, where_, val, or
                                                   SqlBackend, ToBackendKey, PersistField, PersistEntityBackend,
                                                   PersistEntity, SqlPersistT, toSqlKey, SqlExpr, OrderBy,
                                                   (^.), (?.), (==.))
+import           Database.Persist.Audit.Types
 
 import           Api.Types
 import           Config

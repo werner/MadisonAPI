@@ -21,6 +21,9 @@ import qualified Database.Esqueleto               as E
 import           Network.Wai                      (Application)
 import           Servant                          
 import           Web.HttpApiData                  (showTextData)
+import           Database.Persist.Audit.Types
+import           Database.Persist.Audit.Class
+import           Database.Persist.Audit.Queries
 
 import           Api.Types
 import           Config                           (App (..), Config (..))
@@ -74,6 +77,12 @@ instance FromHttpApiData FilterWarehouse where
 instance ToHttpApiData FilterWarehouse where
         toUrlPiece = showTextData
 
+instance ToAudit Warehouse where
+        type AuditResult Warehouse = WarehouseAudit
+        toAudit v k auditAction editedBy editedOn = WarehouseAudit (warehouseName v) (warehouseUserId v)
+                                                                   (warehouseScopedId v)
+                                                                   k auditAction editedBy editedOn
+
 type API = 
              "warehouses" :> MadisonAuthProtect 
                           :> QueryParams "sortField" SortWarehouse
@@ -100,8 +109,7 @@ insert' :: MadisonAuthData -> CrudWarehouse -> App Int
 insert' showUser crudWarehouse = do
     user     <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
     scopedId <- nextScopedId (fromSqlKey $ entityKey user) WarehouseUserId WarehouseScopedId
-    new      <- runDb $ insertBy $ Warehouse (cwName crudWarehouse) (entityKey user) 
-                                                scopedId Nothing Nothing
+    new      <- runDb $ insertBy $ Warehouse (cwName crudWarehouse) (entityKey user) scopedId
     case new of
         Left  err -> throwError (err409 { errReasonPhrase = "Duplicate warehouse: " 
                                                             Prelude.++ show (warehouseName $ entityVal err) }) 
