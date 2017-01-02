@@ -46,13 +46,13 @@ spec = with appSpec $ do
 
         it "updates a warehouse" $ do
           warehouse <- liftIO $ createWarehouse "Second"
-          let id    = fromSqlKey $ entityKey warehouse
+          let id    = warehouseScopedId $ entityVal warehouse
           let path  = "/warehouses/" ++ (show id)
           putJson (C.pack path) (CrudWarehouse "Third") `shouldRespondWith` 200
 
         it "deletes a warehouse" $ do
           warehouse <- liftIO $ createWarehouse "first"
-          let id    = fromSqlKey $ entityKey warehouse
+          let id    = warehouseScopedId $ entityVal warehouse
           let path  = "/warehouses/" ++ (show id)
           deleteJson (C.pack path) `shouldRespondWith` 200
 
