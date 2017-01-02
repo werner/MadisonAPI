@@ -2,6 +2,10 @@ flags: {}
 extra-package-dbs: []
 packages:
 - '.'
+- location:
+    git: git@github.com:werner/persistent-audit.git
+    commit: a94ae1fe388ceffb3e80b124b79b79a0ae92dca7
+  extra-dep: true
 extra-deps:
 - esqueleto-2.4.3
 - persistent-2.2.4.1
