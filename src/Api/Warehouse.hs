@@ -119,14 +119,17 @@ insert' showUser crudWarehouse = do
 update' :: MadisonAuthData -> Int -> CrudWarehouse -> App Int
 update' showUser id warehouse = do
     user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
-    runDb $ updateWhere [WarehouseScopedId ==. id, 
-                           WarehouseUserId ==. entityKey user] [WarehouseName =. cwName warehouse] 
+    runDb $ updateWhereAndAudit [WarehouseScopedId ==. id, 
+                                 WarehouseUserId   ==. entityKey user] 
+                                [WarehouseName =. cwName warehouse] 
+                                ( Text.pack $ userEmail $ entityVal user )
     return id
 
 delete' :: MadisonAuthData -> Int -> App Int
 delete' showUser id = do
     user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
-    runDb $ deleteWhere [WarehouseScopedId ==. id, WarehouseUserId ==. entityKey user]
+    runDb $ deleteWhereAndAudit [WarehouseScopedId ==. id, WarehouseUserId ==. entityKey user]
+                                ( Text.pack $ userEmail $ entityVal user )
     return id
 
 getSortField :: E.SqlExpr (Entity Warehouse) -> SortWarehouse -> E.SqlExpr E.OrderBy
