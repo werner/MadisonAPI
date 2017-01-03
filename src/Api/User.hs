@@ -23,7 +23,7 @@ import           Servant.Server.Experimental.Auth.Cookie (AuthCookieData)
 
 import           Api.Types
 import           Config                           (App (..), Config (..))
-import           Models
+import           Models.Base
 
 data ShowUser = ShowUser { suId    :: String
                          , suEmail :: String } deriving (Show, Read, Generic)

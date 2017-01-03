@@ -7,7 +7,7 @@ module SpecSupport ( module Debug.Trace
                    , module Control.Monad
                    , module Data.Maybe
                    , module Servant.API.Alternative
-                   , module Models
+                   , module Models.Base
                    , module Api.Types
                    , ExceptT, MonadError, runExceptT, MonadIO, MonadReader, ReaderT, ask, runReaderT
                    , App, runApp, Config (..), Environment (..), convertApp, makePool, setLogger
@@ -62,7 +62,7 @@ import           Crypto.BCrypt                     (hashPasswordUsingPolicy, fas
 
 import           Config                            (App, runApp, Config(..), Environment(..), 
                                                     convertApp, makePool, setLogger)
-import           Models
+import           Models.Base
 import           Api.Types
 import           Api.User 
 import           Lib.Authentication

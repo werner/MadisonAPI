@@ -8,6 +8,8 @@ import           Data.ByteString                  (ByteString)
 import           Data.CaseInsensitive             as CI
 
 import           Api.Warehouse
+import           Models.Base
+import           Models.Warehouse
 
 import           SpecSupport
 

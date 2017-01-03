@@ -14,7 +14,7 @@ import           Api.User
 import qualified Api.Warehouse               as WarehouseApi
 import           Config                      (Config (..), Environment (..), getConfig, getPort,
                                               makePool, setLogger, lookupSetting)
-import           Models                      (doMigrations)
+import           Models.Base                 (doMigrations)
 import           Safe                        (readMay)
 
 

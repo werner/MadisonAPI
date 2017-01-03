@@ -11,7 +11,7 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 
-module Models where
+module Models.Base where
 
 import           Control.Monad.Reader
 import           Data.Maybe

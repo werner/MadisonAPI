@@ -30,7 +30,7 @@ import           Data.UUID.V4                     (nextRandom)
 import           Data.UUID.Types                  (toString)
 import           Config                           (App (..), Config (..), getConfig, convertApp,
                                                    Environment (..), makePool, lookupSetting)
-import           Models
+import           Models.Base
 import           Api.User
 
 data AuthUser = AuthUser { authEmail    :: String

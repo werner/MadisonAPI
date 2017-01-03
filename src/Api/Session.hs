@@ -17,7 +17,7 @@ import           Data.ByteString                          (ByteString)
 import           Lib.Authentication
 import           Api.User
 import           Config
-import           Models
+import           Models.Base
 
 type API = "login" :> ReqBody '[JSON] AuthUser :> Post '[JSON] 
                                                    (Headers '[Header "madison-auth" ByteString] Api.User.ShowUser)

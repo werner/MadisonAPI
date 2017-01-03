@@ -10,7 +10,7 @@ import           SpecSupport
 
 import           Lib.Authentication
 import           Api.User
-import           Models
+import           Models.Base
 import           Api.Session
 
 logIn :: AuthUser -> Manager -> BaseUrl -> ClientM (Headers '[Header "madison-auth" ByteString] Api.User.ShowUser)

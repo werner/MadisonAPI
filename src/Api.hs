@@ -28,7 +28,7 @@ import           Servant.Server.Experimental.Auth (AuthHandler, AuthServerData,
 
 
 import           Config                      (App (..), Config (..), convertApp)
-import           Models
+import           Models.Base
 
 import           Lib.Authentication
 import           Api.Types
