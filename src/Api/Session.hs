@@ -15,17 +15,17 @@ import           Crypto.Random                            (drgNew)
 import           Data.ByteString                          (ByteString)
 
 import           Lib.Authentication
-import           Api.User
 import           Config
 import           Models.Base
+import           Models.User
 
 type API = "login" :> ReqBody '[JSON] AuthUser :> Post '[JSON] 
-                                                   (Headers '[Header "madison-auth" ByteString] Api.User.ShowUser)
+                                                   (Headers '[Header "madison-auth" ByteString] ShowUser)
 
 server :: ServerT Api.Session.API App
 server = login
 
-login :: (KnownSymbol e) => AuthUser -> App (Headers '[Header e ByteString] Api.User.ShowUser)
+login :: (KnownSymbol e) => AuthUser -> App (Headers '[Header e ByteString] ShowUser)
 login user = do
         authenticated <- authenticate user
         sk <- mkServerKey 16 Nothing

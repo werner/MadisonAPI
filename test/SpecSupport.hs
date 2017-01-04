@@ -63,8 +63,8 @@ import           Crypto.BCrypt                     (hashPasswordUsingPolicy, fas
 import           Config                            (App, runApp, Config(..), Environment(..), 
                                                     convertApp, makePool, setLogger)
 import           Models.Base
+import           Models.User 
 import           Api.Types
-import           Api.User 
 import           Lib.Authentication
 
 wipeDB :: ReaderT SqlBackend IO ()
@@ -106,7 +106,7 @@ deleteJson path =
     request methodDelete path [(CI.mk (C.pack "Content-Type"), (C.pack "application/json")), 
                                (CI.mk (C.pack "madison-auth"), (C.pack "key-test"))] $ encode ""
 
-authServerContextSpec :: Context (AuthHandler Request Api.User.ShowUser ': '[])
+authServerContextSpec :: Context (AuthHandler Request ShowUser ': '[])
 authServerContextSpec = authHandler :. EmptyContext
 
 createUser :: String -> IO (Key User)

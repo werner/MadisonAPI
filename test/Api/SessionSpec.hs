@@ -9,11 +9,11 @@ import           Servant                          (Headers, Header)
 import           SpecSupport
 
 import           Lib.Authentication
-import           Api.User
 import           Models.Base
+import           Models.User
 import           Api.Session
 
-logIn :: AuthUser -> Manager -> BaseUrl -> ClientM (Headers '[Header "madison-auth" ByteString] Api.User.ShowUser)
+logIn :: AuthUser -> Manager -> BaseUrl -> ClientM (Headers '[Header "madison-auth" ByteString] ShowUser)
 logIn = client apiSpec
 
 apiSpec :: Proxy Api.Session.API

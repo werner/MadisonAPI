@@ -25,7 +25,7 @@ import           Database.Persist.Postgresql (fromSqlKey, insert, updateWhere, s
 
 import           Config                      (App (..), Config (..), getHost)
 import           Models.Base
-import           Api.User
+import           Models.User
 import           Lib.Mail
 import           Lib.Authentication
 

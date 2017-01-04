@@ -29,6 +29,7 @@ import           Servant.Server.Experimental.Auth (AuthHandler, AuthServerData,
 
 import           Config                      (App (..), Config (..), convertApp)
 import           Models.Base
+import           Models.User
 
 import           Lib.Authentication
 import           Api.Types
@@ -39,7 +40,7 @@ import qualified Api.Register                as Register
 
 type API = Api.Session.API :<|> Register.API :<|> Api.User.API :<|> WarehouseApi.API
 
-type instance AuthServerData (AuthProtect "madison-auth") = Api.User.ShowUser
+type instance AuthServerData (AuthProtect "madison-auth") = ShowUser
 
 server :: ServerT Api.API App
 server = Api.Session.server :<|> Register.server :<|> Api.User.server :<|> WarehouseApi.server
@@ -50,7 +51,7 @@ appToServer cfg = enter (convertApp cfg) Api.server
 appApi :: Proxy Api.API
 appApi = Proxy
 
-authServerContext :: Context (AuthHandler Request Api.User.ShowUser ': '[])
+authServerContext :: Context (AuthHandler Request ShowUser ': '[])
 authServerContext = authHandler :. EmptyContext
 
 app :: Config -> Application

@@ -31,6 +31,7 @@ import           Data.UUID.Types                  (toString)
 import           Config                           (App (..), Config (..), getConfig, convertApp,
                                                    Environment (..), makePool, lookupSetting)
 import           Models.Base
+import           Models.User
 import           Api.User
 
 data AuthUser = AuthUser { authEmail    :: String
@@ -45,7 +46,7 @@ data AuthenticationException = PasswordNotMatch String
 
 instance Exception AuthenticationException
 
-authenticate :: AuthUser -> App Api.User.ShowUser
+authenticate :: AuthUser -> App ShowUser
 authenticate au = do
     let password = authPassword au
     maybeUser <- runDb (selectFirst [UserEmail                       ==. authEmail au, 
@@ -63,7 +64,7 @@ authenticate au = do
                              runDb $ delete $ entityKey s
                              runDb $ insert $ Session (entityKey user) uuid
                          Nothing -> runDb $ insert $ Session (entityKey user) uuid
-                     return $ Api.User.ShowUser uuid (userEmail $ entityVal user)
+                     return $ ShowUser uuid (userEmail $ entityVal user)
                  False -> throwError (err500 { errReasonPhrase = "password doesn't match" })
 
 generateUUID :: (MonadReader Config App, MonadIO App) => App String
@@ -71,22 +72,22 @@ generateUUID = do
           uuid <- liftIO nextRandom
           return $ toString uuid
         
-authHandler :: AuthHandler Request Api.User.ShowUser
+authHandler :: AuthHandler Request ShowUser
 authHandler =
   let handler req = case lookup (CI.mk $ C.pack "madison-auth") (requestHeaders req) of
         Nothing  -> throwError (err401 { errReasonPhrase = "Missing auth header" })
         Just key -> checkSession key
   in mkAuthHandler handler
 
-checkSession :: C.ByteString -> Handler Api.User.ShowUser
+checkSession :: C.ByteString -> Handler ShowUser
 checkSession session = do
         cfg <- liftIO getConfig
         lookUpUser cfg session
 
-lookUpUser :: Config -> C.ByteString -> Handler Api.User.ShowUser
+lookUpUser :: Config -> C.ByteString -> Handler ShowUser
 lookUpUser cfg session = do
   maybeSession <- enter (convertApp cfg) (getSession session)
-  enter (convertApp cfg) (Api.User.showUserBySession maybeSession)
+  enter (convertApp cfg) (showUserBySession maybeSession)
 
 getSession :: C.ByteString -> App (Maybe (Entity Session))
 getSession session = runDb (selectFirst [SessionCookie ==. C.unpack session] [])

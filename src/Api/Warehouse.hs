@@ -27,7 +27,7 @@ import           Api.Types
 import           Config                           (App (..), Config (..))
 import           Models.Base
 import           Models.Warehouse
-import           Api.User
+import           Models.User
 import qualified Api.Register                     as Register
 
 type API = 
@@ -54,7 +54,7 @@ all' session sortWarehouses limit offset filters = do
 
 insert' :: MadisonAuthData -> CrudWarehouse -> App Int
 insert' showUser crudWarehouse = do
-    user     <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
+    user     <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= getUserBySession
     scopedId <- nextScopedId (fromSqlKey $ entityKey user) WarehouseUserId WarehouseScopedId
     new      <- runDb $ insertAndAuditBy ( Warehouse (cwName crudWarehouse) (entityKey user) scopedId )
                                          ( Text.pack $ userEmail $ entityVal user )
@@ -65,7 +65,7 @@ insert' showUser crudWarehouse = do
 
 update' :: MadisonAuthData -> Int -> CrudWarehouse -> App Int
 update' showUser id warehouse = do
-    user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
+    user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= getUserBySession
     runDb $ updateWhereAndAudit [WarehouseScopedId ==. id, 
                                  WarehouseUserId   ==. entityKey user] 
                                 [WarehouseName =. cwName warehouse] 
@@ -74,7 +74,7 @@ update' showUser id warehouse = do
 
 delete' :: MadisonAuthData -> Int -> App Int
 delete' showUser id = do
-    user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= Api.User.getUserBySession
+    user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= getUserBySession
     runDb $ deleteWhereAndAudit [WarehouseScopedId ==. id, WarehouseUserId ==. entityKey user]
                                 ( Text.pack $ userEmail $ entityVal user )
     return id
