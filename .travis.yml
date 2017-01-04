@@ -1,0 +1,22 @@
+language: c
+
+env:
+  - STACK_YAML=stack.yaml
+  - MADISON_ENV=test
+
+services:
+  - postgresql
+
+install:
+  - mkdir -p ~/.local/bin
+  - export PATH=$HOME/.local/bin:$PATH
+  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  - stack --version
+  - stack setup --no-terminal
+
+before_script:
+  - psql -c "create user madison with createdb password 'madison';" -U postgres
+  - psql -c "create database madison_test owner madison;" -U postgres
+
+script:
+  - stack test --ghc-options=-Werror --no-terminal
