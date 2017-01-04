@@ -4,6 +4,11 @@ env:
   - STACK_YAML=stack.yaml
   - MADISON_ENV=test
 
+addons:
+  apt:
+    packages:
+      - libgmp-dev
+
 services:
   - postgresql
 
