@@ -15,8 +15,8 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Config, Models.Base, Models.Warehouse, Models.User
-                     , Lib.Mail, Lib.Authentication
+  exposed-modules:     Config, Lib.Mail, Lib.Authentication
+                     , Models.Base, Models.Warehouse, Models.User, Models.Register
                      , Api, Api.Types, Api.Session, Api.Register, Api.User, Api.Warehouse
                      , Formula.Evaluator, Formula.Parser, Formula.Types, Formula.Functions
   build-depends:       base >= 4.7 && < 5

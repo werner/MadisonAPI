@@ -2,19 +2,12 @@
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE DeriveGeneric     #-}
 
 module Api.Register where
 
-import           Data.Time.Clock
-import           Data.Time.Calendar
-
-import           Data.Monoid                 ((<>))
 import           Control.Monad.IO.Class      (liftIO)
 import           Control.Exception           (throw)
 import           Control.Monad.Except        (throwError)
-import           GHC.Generics                (Generic)
-import           Data.Aeson                  (ToJSON, FromJSON)
 import           Data.Int                    (Int64)
 import qualified Data.ByteString.Char8       as C
 
@@ -26,19 +19,8 @@ import           Database.Persist.Postgresql (fromSqlKey, insert, updateWhere, s
 
 import           Config                      (App (..), Config (..), getHost)
 import           Models.Base
-import           Models.User
-import           Lib.Mail
 import           Lib.Authentication
-
-data RegisterUser = RegisterUser { reEmail                :: String
-                                 , reFirstName            :: Maybe String
-                                 , reLastName             :: Maybe String
-                                 , reCompanyName          :: Maybe String
-                                 , rePassword             :: String 
-                                 , rePasswordConfirmation :: String} deriving (Show, Read, Generic)
-
-instance ToJSON   RegisterUser
-instance FromJSON RegisterUser
+import           Models.Register
 
 type API =  "register"     :> ReqBody '[JSON] RegisterUser :> Post '[JSON] String
        :<|> "confirmation" :> Capture "email" String       
@@ -69,39 +51,3 @@ confirmation email token = do
             runDb $ updateWhere [UserEmail ==. email] [UserConfirmationToken           =. Nothing, 
                                                        UserConfirmationTokenExpiration =. Nothing]
             return "Confirmation Successful"
-
-expirationDate :: IO UTCTime
-expirationDate = do
-       now <- getCurrentTime
-       let twoHours = 2 * 60 * 60
-       return $ twoHours `addUTCTime` now
-
-sendConfirmationToken :: String -> App String
-sendConfirmationToken email = do
-    maybeUser <- runDb (selectFirst [UserEmail ==. email, UserConfirmationToken !=. Nothing] [])
-    case maybeUser of
-        Nothing   -> throwError err404
-        Just user -> do
-            uuid  <- generateUUID
-            date  <- liftIO expirationDate
-            user' <- runDb $ updateWhere [UserEmail ==. email] [UserConfirmationToken =. Just uuid, 
-                                                                UserConfirmationTokenExpiration =. Just date]
-
-            bodyText <- bodyTextConfirmationEmail email uuid
-            bodyHtml <- bodyHtmlConfirmationEmail email uuid
-            liftIO $ sendEmail (ToEmail (fullName $ entityVal user) email)  "Confirmation Email" 
-                               bodyText bodyHtml
-            return uuid
-
-bodyTextConfirmationEmail :: String -> String -> App String
-bodyTextConfirmationEmail email uuid = do
-        host <- liftIO getHost
-        let fullHost = host <> "confirmation/" <> email <> "/" <> uuid
-        return $ "Thanks for registering, please go to " <> fullHost <> " to confirm your subscription."
-
-bodyHtmlConfirmationEmail :: String -> String -> App String
-bodyHtmlConfirmationEmail email uuid = do
-        host <- liftIO getHost
-        let fullHost = host <> "confirmation/" <> email <> "/" <> uuid
-        return $ "Thanks for registering, please go to <a href='" <> fullHost <> "'>" <>
-                 fullHost <> "</a> to confirm your subscription."
