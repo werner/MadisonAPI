@@ -9,6 +9,7 @@ module Api.Register where
 import           Data.Time.Clock
 import           Data.Time.Calendar
 
+import           Data.Monoid                 ((<>))
 import           Control.Monad.IO.Class      (liftIO)
 import           Control.Exception           (throw)
 import           Control.Monad.Except        (throwError)
@@ -95,12 +96,12 @@ sendConfirmationToken email = do
 bodyTextConfirmationEmail :: String -> String -> App String
 bodyTextConfirmationEmail email uuid = do
         host <- liftIO getHost
-        let fullHost = host ++ "confirmation/" ++ email ++ "/" ++ uuid
-        return $ "Thanks for registering, please go to " ++ fullHost ++ " to confirm your subscription."
+        let fullHost = host <> "confirmation/" <> email <> "/" <> uuid
+        return $ "Thanks for registering, please go to " <> fullHost <> " to confirm your subscription."
 
 bodyHtmlConfirmationEmail :: String -> String -> App String
 bodyHtmlConfirmationEmail email uuid = do
         host <- liftIO getHost
-        let fullHost = host ++ "confirmation/" ++ email ++ "/" ++ uuid
-        return $ "Thanks for registering, please go to <a href='" ++ fullHost ++ "'>" ++
-                 fullHost ++ "</a> to confirm your subscription."
+        let fullHost = host <> "confirmation/" <> email <> "/" <> uuid
+        return $ "Thanks for registering, please go to <a href='" <> fullHost <> "'>" <>
+                 fullHost <> "</a> to confirm your subscription."
