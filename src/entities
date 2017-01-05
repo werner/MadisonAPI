@@ -11,6 +11,7 @@ User json sql=users
 
 Company json sql=companies
     name String
+    UniqueCompanyName name
     deriving Show
 
 Session json sql=sessions

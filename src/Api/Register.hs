@@ -6,6 +6,7 @@
 module Api.Register where
 
 import           Control.Monad.IO.Class      (liftIO)
+import           Data.Maybe                  (fromMaybe)
 import           Control.Exception           (throw)
 import           Control.Monad.Except        (throwError)
 import           Data.Int                    (Int64)
@@ -14,7 +15,7 @@ import qualified Data.ByteString.Char8       as C
 import           Servant                     ((:<|>)(..), (:>), ReqBody, JSON, Post, Get, ServerT, Capture)
 import           Servant.Server              (err404, errReasonPhrase)
 
-import           Database.Persist.Postgresql (fromSqlKey, insert, updateWhere, selectFirst, entityVal,
+import           Database.Persist.Postgresql (Entity (..), fromSqlKey, insert, updateWhere, selectFirst, entityVal,
                                              (==.), (!=.), (=.))
 
 import           Config                      (App (..), Config (..), getHost)
@@ -35,8 +36,10 @@ register user
             cryptPasswd <- encryptPassword $ rePassword user
             uuid        <- generateUUID
             date        <- liftIO expirationDate
+            company     <- runDb $ insert $ Company (fromMaybe "" $ reCompanyName user)
             user'       <- runDb $ insert $ User (reEmail user) (C.unpack cryptPasswd)
-                                                 (reFirstName user) (reLastName user) Nothing
+                                                 (reFirstName user) (reLastName user) 
+                                                 (Just company)
                                                  (Just uuid) (Just date)
             sendConfirmationToken $ reEmail user
             return uuid
