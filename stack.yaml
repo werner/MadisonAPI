@@ -3,7 +3,7 @@ extra-package-dbs: []
 packages:
 - '.'
 - location:
-    git: git@github.com:werner/persistent-audit.git
+    git: git+ssh://git@github.com/werner/persistent-audit.git
     commit: 42fe3878946492e28703847a919355b11268bb82
   extra-dep: true
 extra-deps:
