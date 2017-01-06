@@ -1,4 +1,10 @@
-language: c
+sudo: false
+
+language: generic
+
+cache:
+  directories:
+  - $HOME/.stack
 
 env:
   - STACK_YAML=stack.yaml
@@ -12,12 +18,15 @@ addons:
 services:
   - postgresql
 
-install:
+before-install:
   - mkdir -p ~/.local/bin
   - export PATH=$HOME/.local/bin:$PATH
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
   - stack --version
   - stack setup --no-terminal
+
+install:
+  - stack --no-terminal --install-ghc test --only-dependencies
 
 before_script:
   - psql -c "create user madison with createdb password 'madison';" -U postgres
