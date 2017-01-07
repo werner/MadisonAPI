@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE GADTs                #-}
 
 module SpecSupport ( module Debug.Trace 
                    , module Control.Exception
@@ -20,7 +21,7 @@ module SpecSupport ( module Debug.Trace
                    , Server, ServerT, Proxy(..), enter, err404
                    , client, ClientM, BaseUrl, AuthenticateReq
                    , Manager, newManager, defaultManagerSettings
-                   , Application, Request, getTokenByEmail
+                   , Application, Request, getTokenByEmail, findEntity
                    , authServerContextSpec, deleteJson, putJson, postJson, setupDB, createUser) where
 
 import           Control.Monad
@@ -47,7 +48,8 @@ import           Network.HTTP.Types
 import           Network.Wai                       (Application, Request)
 import           Network.Wai.Test                  (SResponse)
 import           Database.Persist.Postgresql       (fromSqlKey, entityKey, runSqlPool, selectFirst, (==.)
-                                                   , insert, Entity(..))
+                                                   , PersistEntity , insert, SqlBackend, PersistEntityBackend
+                                                   , Entity(..))
 import           Servant.Server                    (BasicAuthCheck (BasicAuthCheck), errReasonPhrase
                                                    , serveWithContext, Context, Context ((:.), EmptyContext))
 import           Servant.Server.Experimental.Auth  (AuthHandler)
@@ -124,3 +126,11 @@ getTokenByEmail email = do
         case user of
             Just u  -> return $ fromMaybe "" (userConfirmationToken $ entityVal u)
             Nothing -> throw err404 { errReasonPhrase = "Token Not Found in Test" }
+
+findEntity :: (PersistEntityBackend val ~ SqlBackend, PersistEntity val) => [Filter val] -> IO (Entity val)
+findEntity condition = do
+        pool <- makePool Test
+        entity <- runSqlPool (selectFirst condition []) pool
+        case entity of
+            Just e  -> return e
+            Nothing -> throw err404 { errReasonPhrase = "Entity Not Found in Test" }
