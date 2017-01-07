@@ -26,7 +26,7 @@ spec :: Spec
 spec = with appSpec $ do
     describe "/login" $ do
         it "Log In" $ do
-          warehouse <- liftIO $ createUser "admin@admin.com"
+          liftIO $ createUser "admin@admin.com"
           postJson (C.pack "/login") (AuthUser "admin@admin.com" "123456") `shouldRespondWith` 200
 
 type APISpec = Api.Session.API

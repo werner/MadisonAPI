@@ -20,7 +20,7 @@ module SpecSupport ( module Debug.Trace
                    , Server, ServerT, Proxy(..), enter, err404
                    , client, ClientM, BaseUrl, AuthenticateReq
                    , Manager, newManager, defaultManagerSettings
-                   , Application, Request
+                   , Application, Request, getTokenByEmail
                    , authServerContextSpec, deleteJson, putJson, postJson, setupDB, createUser) where
 
 import           Control.Monad
@@ -48,8 +48,8 @@ import           Network.Wai                       (Application, Request)
 import           Network.Wai.Test                  (SResponse)
 import           Database.Persist.Postgresql       (fromSqlKey, entityKey, runSqlPool, selectFirst, (==.)
                                                    , insert, Entity(..))
-import           Servant.Server                    (BasicAuthCheck (BasicAuthCheck), 
-                                                    serveWithContext, Context, Context ((:.), EmptyContext))
+import           Servant.Server                    (BasicAuthCheck (BasicAuthCheck), errReasonPhrase
+                                                   , serveWithContext, Context, Context ((:.), EmptyContext))
 import           Servant.Server.Experimental.Auth  (AuthHandler)
 import           Servant                           (Server, ServerT, Proxy(..), enter, err404)
 import           Servant.Client                    (client, ClientM, BaseUrl, AuthenticateReq)
@@ -116,3 +116,11 @@ createUser email = do
                                         (hashPasswordUsingPolicy fastBcryptHashingPolicy $ C.pack password)
         cryptPasswd <- encryptPassword "123456"
         runSqlPool (insert $ User email (C.unpack cryptPasswd) Nothing Nothing Nothing Nothing Nothing) pool
+
+getTokenByEmail :: String -> IO String
+getTokenByEmail email = do
+        pool <- makePool Test
+        user <- runSqlPool (selectFirst [UserEmail ==. email] []) pool
+        case user of
+            Just u  -> return $ fromMaybe "" (userConfirmationToken $ entityVal u)
+            Nothing -> throw err404 { errReasonPhrase = "Token Not Found in Test" }

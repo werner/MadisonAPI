@@ -3,6 +3,7 @@ module Api.RegisterSpec (main, spec) where
 
 import qualified Data.ByteString.Char8            as C
 import           SpecSupport
+import           Data.Monoid                      ((<>))
 
 import           Models.Base
 import           Models.Register
@@ -30,6 +31,17 @@ spec = with appSpec $ do
                                   "123456"
           postJson (C.pack "/register") user `shouldRespondWith` 200
 
+        it "Confirmates" $ do
+          let user = RegisterUser "test@test.com"
+                                  (Just "Test")
+                                  (Just "Super Test")
+                                  (Just "My Company")
+                                  "123456"
+                                  "123456"
+          postJson (C.pack "/register") user `shouldRespondWith` 200
+          token <- liftIO $ getTokenByEmail "test@test.com"
+          request  (C.pack "GET") (C.pack $ "/confirmation/test@test.com/" <> token) [] (encode "") `shouldRespondWith` 200
+
 type APISpec = Api.Register.API
 
 serverSpec :: ServerT APISpec App
@@ -44,3 +56,4 @@ appSpec = do
     pool <- makePool Test
     let cfg = Config { getPool = pool, getEnv = Test }
     return $ serveWithContext apiSpec authServerContextSpec (appToServerSpec cfg)
+
