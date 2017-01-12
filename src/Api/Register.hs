@@ -5,6 +5,7 @@
 
 module Api.Register where
 
+import           Data.Monoid                 ((<>))
 import           Control.Monad.IO.Class      (liftIO)
 import           Data.Maybe                  (fromMaybe)
 import           Control.Exception           (throw)
@@ -13,9 +14,10 @@ import           Data.Int                    (Int64)
 import qualified Data.ByteString.Char8       as C
 
 import           Servant                     ((:<|>)(..), (:>), ReqBody, JSON, Post, Get, ServerT, Capture)
-import           Servant.Server              (err404, errReasonPhrase)
+import           Servant.Server              (err409, err404, errReasonPhrase)
 
-import           Database.Persist.Postgresql (Entity (..), fromSqlKey, insert, updateWhere, selectFirst, entityVal,
+import           Database.Persist.Postgresql (Entity (..), fromSqlKey, insertBy, insert, updateWhere
+                                             , selectFirst, entityVal,
                                              (==.), (!=.), (=.))
 
 import           Config                      (App (..), Config (..), getHost)
@@ -36,13 +38,18 @@ register user
             cryptPasswd <- encryptPassword $ rePassword user
             uuid        <- generateUUID
             date        <- liftIO expirationDate
-            company     <- runDb $ insert $ Company (fromMaybe "" $ reCompanyName user)
-            user'       <- runDb $ insert $ User (reEmail user) (C.unpack cryptPasswd)
-                                                 (reFirstName user) (reLastName user) 
-                                                 (Just company)
-                                                 (Just uuid) (Just date)
-            sendConfirmationToken $ reEmail user
-            return uuid
+            company     <- insertCompany (fromMaybe "" $ reCompanyName user)
+            user'       <- runDb $ insertBy $ User (reEmail user) (C.unpack cryptPasswd)
+                                                   (reFirstName user) (reLastName user) 
+                                                   (Just company)
+                                                   (Just uuid) (Just date)
+            case user' of
+                Left err  -> throwError (err409 { errReasonPhrase = "Duplicate user: " 
+                                                            <> show (userEmail $ entityVal err) })
+                Right key -> do
+                    sendConfirmationToken $ reEmail user
+                    return uuid
+
         | otherwise = throw $ PasswordNotMatch $ "password doesn't match with confirmation"
 
 confirmation :: String -> String -> App String
@@ -54,3 +61,11 @@ confirmation email token = do
             runDb $ updateWhere [UserEmail ==. email] [UserConfirmationToken           =. Nothing, 
                                                        UserConfirmationTokenExpiration =. Nothing]
             return "Confirmation Successful"
+
+insertCompany :: String -> App (Key Company)
+insertCompany name = do
+        company <- runDb $ insertBy $ Company name
+        case company of
+            Left err  -> throwError (err409 { errReasonPhrase = "Duplicate Company: " 
+                                                        <> show (companyName $ entityVal err) })
+            Right key -> return key
