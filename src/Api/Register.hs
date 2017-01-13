@@ -46,8 +46,7 @@ register user
             case user' of
                 Left err  -> do
                     runDb $ delete company
-                    throwError (err409 { errReasonPhrase = "Duplicate user: " 
-                                                            <> show (userEmail $ entityVal err) })
+                    throwError (err409 { errReasonPhrase = "Duplicate user: " <> (userEmail $ entityVal err) })
                 Right key -> do
                     sendConfirmationToken $ reEmail user
                     return uuid
@@ -68,6 +67,5 @@ insertCompany :: String -> App (Key Company)
 insertCompany name = do
         company <- runDb $ insertBy $ Company name
         case company of
-            Left err  -> throwError (err409 { errReasonPhrase = "Duplicate Company: " 
-                                                        <> show (companyName $ entityVal err) })
+            Left err  -> throwError (err409 { errReasonPhrase = "Duplicate Company: " <> (companyName $ entityVal err) })
             Right key -> return key

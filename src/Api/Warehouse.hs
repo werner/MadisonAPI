@@ -8,6 +8,7 @@
 
 module Api.Warehouse where
 
+import           Data.Monoid                      ((<>))
 import           GHC.Generics                     (Generic)
 import           Data.Maybe                       (fromMaybe)
 import           Data.Text                        as Text
@@ -60,7 +61,7 @@ insert' showUser crudWarehouse = do
                                          ( Text.pack $ userEmail $ entityVal user )
     case new of
         Left  err -> throwError (err409 { errReasonPhrase = "Duplicate warehouse: " 
-                                                            Prelude.++ show (warehouseName $ entityVal err) }) 
+                                                            <> (warehouseName $ entityVal err) }) 
         Right key -> return scopedId
 
 update' :: MadisonAuthData -> Int -> CrudWarehouse -> App Int
