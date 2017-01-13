@@ -17,7 +17,7 @@ import           Servant                     ((:<|>)(..), (:>), ReqBody, JSON, P
 import           Servant.Server              (err409, err404, errReasonPhrase)
 
 import           Database.Persist.Postgresql (Entity (..), fromSqlKey, insertBy, insert, updateWhere
-                                             , selectFirst, entityVal,
+                                             , selectFirst, entityVal, delete,
                                              (==.), (!=.), (=.))
 
 import           Config                      (App (..), Config (..), getHost)
@@ -44,7 +44,9 @@ register user
                                                    (Just company)
                                                    (Just uuid) (Just date)
             case user' of
-                Left err  -> throwError (err409 { errReasonPhrase = "Duplicate user: " 
+                Left err  -> do
+                    runDb $ delete company
+                    throwError (err409 { errReasonPhrase = "Duplicate user: " 
                                                             <> show (userEmail $ entityVal err) })
                 Right key -> do
                     sendConfirmationToken $ reEmail user
