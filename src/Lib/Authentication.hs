@@ -6,6 +6,7 @@
 
 module Lib.Authentication where
 
+import           Data.Text
 import           Control.Exception                (Exception, throw)
 import           GHC.Generics                     (Generic)
 import           Data.Aeson                       (ToJSON, FromJSON)
@@ -34,7 +35,7 @@ import           Models.Base
 import           Models.User
 import           Api.User
 
-data AuthUser = AuthUser { authEmail    :: String
+data AuthUser = AuthUser { authEmail    :: Text
                          , authPassword :: String }
                          deriving (Show, Read, Generic)
 

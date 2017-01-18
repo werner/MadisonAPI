@@ -1,5 +1,5 @@
 User json sql=users
-    email String
+    email Text
     password String
     firstName String Maybe
     lastName String Maybe

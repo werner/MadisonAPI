@@ -41,41 +41,41 @@ type API =
                           :> ReqBody '[JSON] CrudWarehouse          :> Post   '[JSON] Int
         :<|> "warehouses" :> MadisonAuthProtect
                           :> Capture "id" Int
-                          :> ReqBody '[JSON] CrudWarehouse          :> Put    '[JSON] Int
+                          :> ReqBody '[JSON] CrudWarehouse          :> Put    '[JSON] ()
         :<|> "warehouses" :> MadisonAuthProtect
-                          :> Capture "id" Int                       :> Delete '[JSON] Int
+                          :> Capture "id" Int                       :> Delete '[JSON] ()
 
 server :: ServerT Api.Warehouse.API App
 server = all' :<|> insert' :<|> update' :<|> delete'
 
-all' :: MadisonAuthData -> [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> FilterWarehouse -> App [WarehouseStock]
-all' session sortWarehouses limit offset filters = do
-        warehouses <- findAll' sortWarehouses limit offset filters
-        return $ transformAll' warehouses
+all' :: MadisonAuthData 
+     -> [SortWarehouse] 
+     -> Maybe Int64 -> Maybe Int64 -> FilterWarehouse
+     -> App [WarehouseStock]
+all' session sortWarehouses limit offset filters = transformAll' <$> findAll' sortWarehouses limit offset filters
 
 insert' :: MadisonAuthData -> CrudWarehouse -> App Int
 insert' showUser crudWarehouse = do
-    user     <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= getUserBySession
+    user     <- getUserByUUID $ suId showUser
     scopedId <- nextScopedId (fromSqlKey $ entityKey user) WarehouseUserId WarehouseScopedId
     new      <- runDb $ insertAndAuditBy ( Warehouse (cwName crudWarehouse) (entityKey user) scopedId )
-                                         ( Text.pack $ userEmail $ entityVal user )
+                                         ( userEmail $ entityVal user )
     case new of
         Left  err -> throwError (err409 { errReasonPhrase = "Duplicate warehouse: " 
                                                             <> (warehouseName $ entityVal err) }) 
         Right key -> return scopedId
 
-update' :: MadisonAuthData -> Int -> CrudWarehouse -> App Int
+update' :: MadisonAuthData -> Int -> CrudWarehouse -> App ()
 update' showUser id warehouse = do
-    user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= getUserBySession
+    user <- getUserByUUID $ suId showUser
     runDb $ updateWhereAndAudit [WarehouseScopedId ==. id, 
                                  WarehouseUserId   ==. entityKey user] 
-                                [WarehouseName =. cwName warehouse] 
-                                ( Text.pack $ userEmail $ entityVal user )
-    return id
+                                 [WarehouseName =. cwName warehouse] 
+                                 ( userEmail $ entityVal user )
 
-delete' :: MadisonAuthData -> Int -> App Int
+delete' :: MadisonAuthData -> Int -> App ()
 delete' showUser id = do
-    user <- runDb (selectFirst [SessionCookie ==. suId showUser] []) >>= getUserBySession
+    user <- getUserByUUID $ suId showUser
     runDb $ deleteWhereAndAudit [WarehouseScopedId ==. id, WarehouseUserId ==. entityKey user]
-                                ( Text.pack $ userEmail $ entityVal user )
-    return id
+                                ( userEmail $ entityVal user )
+

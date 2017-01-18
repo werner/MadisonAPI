@@ -5,6 +5,7 @@
 
 module Api.Register where
 
+import           Data.Text                   (Text, pack, unpack)
 import           Data.Monoid                 ((<>))
 import           Control.Monad.IO.Class      (liftIO)
 import           Data.Maybe                  (fromMaybe)
@@ -46,7 +47,7 @@ register user
             case user' of
                 Left err  -> do
                     runDb $ delete company
-                    throwError (err409 { errReasonPhrase = "Duplicate user: " <> (userEmail $ entityVal err) })
+                    throwError (err409 { errReasonPhrase = "Duplicate user: " <> unpack (userEmail $ entityVal err) })
                 Right key -> do
                     sendConfirmationToken $ reEmail user
                     return uuid
@@ -55,12 +56,12 @@ register user
 
 confirmation :: String -> String -> App String
 confirmation email token = do
-    maybeUser <- runDb (selectFirst [UserEmail ==. email, UserConfirmationToken ==. Just token] [])
+    maybeUser <- runDb (selectFirst [UserEmail ==. pack email, UserConfirmationToken ==. Just token] [])
     case maybeUser of
         Nothing   -> throwError err404 { errReasonPhrase = "User Not Found in Database" }
         Just user -> do 
-            runDb $ updateWhere [UserEmail ==. email] [UserConfirmationToken           =. Nothing, 
-                                                       UserConfirmationTokenExpiration =. Nothing]
+            runDb $ updateWhere [UserEmail ==. pack email] [UserConfirmationToken           =. Nothing, 
+                                                            UserConfirmationTokenExpiration =. Nothing]
             return "Confirmation Successful"
 
 insertCompany :: String -> App (Key Company)

@@ -2,6 +2,7 @@
 
 module Models.Register where
 
+import           Data.Text                   (Text, pack, unpack)
 import           Data.Monoid                 ((<>))
 import           Control.Monad.IO.Class      (liftIO)
 import           GHC.Generics                (Generic)
@@ -20,7 +21,7 @@ import           Models.User
 import           Config
 
 
-data RegisterUser = RegisterUser { reEmail                :: String
+data RegisterUser = RegisterUser { reEmail                :: Text
                                  , reFirstName            :: Maybe String
                                  , reLastName             :: Maybe String
                                  , reCompanyName          :: Maybe String
@@ -30,7 +31,7 @@ data RegisterUser = RegisterUser { reEmail                :: String
 instance ToJSON   RegisterUser
 instance FromJSON RegisterUser
 
-sendConfirmationToken :: String -> App String
+sendConfirmationToken :: Text -> App String
 sendConfirmationToken email = do
     maybeUser <- runDb (selectFirst [UserEmail ==. email, UserConfirmationToken !=. Nothing] [])
     case maybeUser of
@@ -47,16 +48,16 @@ sendConfirmationToken email = do
                                bodyText bodyHtml
             return uuid
 
-bodyTextConfirmationEmail :: String -> String -> App String
+bodyTextConfirmationEmail :: Text -> String -> App String
 bodyTextConfirmationEmail email uuid = do
         host <- liftIO getHost
-        let fullHost = host <> "confirmation/" <> email <> "/" <> uuid
+        let fullHost = host <> "confirmation/" <> unpack email <> "/" <> uuid
         return $ "Thanks for registering, please go to " <> fullHost <> " to confirm your subscription."
 
-bodyHtmlConfirmationEmail :: String -> String -> App String
+bodyHtmlConfirmationEmail :: Text -> String -> App String
 bodyHtmlConfirmationEmail email uuid = do
         host <- liftIO getHost
-        let fullHost = host <> "confirmation/" <> email <> "/" <> uuid
+        let fullHost = host <> "confirmation/" <> unpack email <> "/" <> uuid
         return $ "Thanks for registering, please go to <a href='" <> fullHost <> "'>" <>
                  fullHost <> "</a> to confirm your subscription."
 

@@ -4,6 +4,7 @@
 
 module Config where
 
+import           Data.Text                            (Text, pack)
 import           Control.Exception                    (throwIO)
 import           Control.Monad.Catch                  (MonadThrow)
 import           Control.Monad.Except                 (ExceptT, MonadError)
@@ -116,9 +117,9 @@ getHost = do
             Just host -> return host
             Nothing   -> return "http://localhost:9090/"
 
-getEmailAddress :: IO String
+getEmailAddress :: IO Text
 getEmailAddress = do
         maybeEmail <- lookupEnv "MADISON_MAIL"
         case maybeEmail of
-            Just email -> return email
+            Just email -> return $ pack email
             Nothing    -> return "madison@gmail.com"
