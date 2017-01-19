@@ -36,11 +36,9 @@ instance FromJSON WarehouseStock
 instance ToJSON CrudWarehouse
 instance FromJSON CrudWarehouse
 
-data SortWarehouse = SWarehouseNameAsc 
-                   | SWarehouseNameDesc 
-                   | SWarehouseScopedIdAsc 
-                   | SWarehouseScopedIdDesc 
-                   deriving (Show, Read, Generic)
+data SortWarehouse  = SWarehouseName SortOrder
+                    | SWarehouseScopedId SortOrder
+                    deriving (Generic, Read, Show)
 
 instance ToJSON   SortWarehouse
 instance FromJSON SortWarehouse
@@ -71,10 +69,10 @@ instance ToAudit Warehouse where
                                                                    k auditAction editedBy editedOn
 
 getSortField :: E.SqlExpr (Entity Warehouse) -> SortWarehouse -> E.SqlExpr E.OrderBy
-getSortField warehouses SWarehouseNameAsc       = E.asc  $ warehouses E.^. WarehouseName
-getSortField warehouses SWarehouseNameDesc      = E.desc $ warehouses E.^. WarehouseName
-getSortField warehouses SWarehouseScopedIdAsc   = E.asc  $ warehouses E.^. WarehouseScopedId
-getSortField warehouses SWarehouseScopedIdDesc  = E.desc $ warehouses E.^. WarehouseScopedId
+getSortField warehouses (SWarehouseScopedId SAsc)  = E.asc  $ warehouses E.^. WarehouseScopedId
+getSortField warehouses (SWarehouseScopedId SDesc) = E.desc $ warehouses E.^. WarehouseScopedId
+getSortField warehouses (SWarehouseName SAsc)      = E.asc  $ warehouses E.^. WarehouseName
+getSortField warehouses (SWarehouseName SDesc)     = E.desc $ warehouses E.^. WarehouseName
 
 mapFilterWarehouse
   :: E.Esqueleto query expr backend =>
@@ -97,7 +95,7 @@ findAll' sortWarehouses limit offset filters = runDb
                         $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
                             E.on $ E.just (warehouses E.^. WarehouseId) E.==. stocks E.?. StockWarehouseId
                             mapFilterWarehouse warehouses filters
-                            E.orderBy $ Prelude.map  (getSortField warehouses) sortWarehouses
+                            E.orderBy $ Prelude.map (getSortField warehouses) sortWarehouses
                             E.groupBy (warehouses E.^. WarehouseId,
                                        warehouses E.^. WarehouseName,
                                        warehouses E.^. WarehouseUserId)

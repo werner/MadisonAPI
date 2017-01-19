@@ -40,6 +40,13 @@ import           Config
 share [mkPersist sqlSettings, mkMigrate "migrateAll"]
     $(persistFileWith lowerCaseSettings "src/entities")
 
+data SortOrder = SAsc
+               | SDesc
+               deriving (Generic, Read, Show)
+
+instance ToJSON   SortOrder
+instance FromJSON SortOrder
+
 doMigrations :: SqlPersistT IO ()
 doMigrations = runMigration migrateAll
 
