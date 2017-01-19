@@ -21,12 +21,14 @@ import           Config
 type RawWarehouseStock = (E.Value Int, E.Value String, 
                           E.Value (Key User), E.Value (Maybe Double))
 
-data WarehouseStock = WarehouseStock { wId     :: Int
-                                     , wName   :: String
-                                     , wUserId :: Int64
-                                     , wStock  :: Double
-                                     }
-                                     deriving (Eq, Show, Read, Generic)
+data WarehouseStock 
+        = WarehouseStock 
+        { wId     :: Int
+        , wName   :: String
+        , wUserId :: Int64
+        , wStock  :: Double
+        }
+        deriving (Eq, Show, Read, Generic)
 
 data CrudWarehouse = CrudWarehouse { cwName :: String } deriving (Eq, Show, Read, Generic)
 
@@ -75,26 +77,32 @@ getSortField warehouses (SWarehouseName SAsc)      = E.asc  $ warehouses E.^. Wa
 getSortField warehouses (SWarehouseName SDesc)     = E.desc $ warehouses E.^. WarehouseName
 
 nameCondition
-  :: E.Esqueleto query expr backend =>
-     expr (Entity Warehouse) -> String -> expr (E.Value Bool)
+  :: E.Esqueleto query expr backend 
+  => expr (Entity Warehouse) -> String -> expr (E.Value Bool)
 nameCondition warehouses name = warehouses E.^. WarehouseName `E.ilike` (E.%) E.++. E.val name E.++. (E.%)
+
 idCondition
-  :: E.Esqueleto query expr backend =>
-     expr (Entity Warehouse) -> Int -> expr (E.Value Bool)
+  :: E.Esqueleto query expr backend 
+  => expr (Entity Warehouse) -> Int -> expr (E.Value Bool)
 idCondition   warehouses id   = warehouses E.^. WarehouseScopedId E.==. E.val id
+
 allCondition
-  :: E.Esqueleto query expr backend =>
-     expr (Entity Warehouse) -> expr (E.Value Bool)
+  :: E.Esqueleto query expr backend 
+  => expr (Entity Warehouse) -> expr (E.Value Bool)
 allCondition  warehouses      = warehouses E.^. WarehouseName `E.ilike` (E.%) E.++. E.val "%" E.++. (E.%)
 
 mapFilterWarehouse
-  :: E.Esqueleto query expr backend =>
-     expr (Entity Warehouse) -> FilterWarehouse -> query ()
-mapFilterWarehouse warehouses (FilterWarehouse (Just name) Nothing)   = E.where_ $ nameCondition warehouses name
-mapFilterWarehouse warehouses (FilterWarehouse Nothing (Just id))     = E.where_ $ idCondition warehouses id
-mapFilterWarehouse warehouses (FilterWarehouse (Just name) (Just id)) = E.where_ $ nameCondition warehouses name 
-                                                                        E.&&. idCondition warehouses id
-mapFilterWarehouse warehouses (FilterWarehouse Nothing Nothing)       = E.where_ $ allCondition warehouses
+  :: E.Esqueleto query expr backend 
+  => expr (Entity Warehouse) 
+  -> FilterWarehouse 
+  -> query ()
+mapFilterWarehouse warehouses filter =
+       case filter of
+           (FilterWarehouse (Just name) Nothing)   -> E.where_ $ nameCondition warehouses name
+           (FilterWarehouse Nothing (Just id))     -> E.where_ $ idCondition warehouses id
+           (FilterWarehouse (Just name) (Just id)) -> E.where_ $ nameCondition warehouses name
+                                                               E.&&. idCondition warehouses id
+           (FilterWarehouse Nothing Nothing)       -> E.where_ $ allCondition warehouses
 
 findAll' :: [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> FilterWarehouse -> App [RawWarehouseStock]
 findAll' sortWarehouses limit offset filters = runDb 
@@ -116,11 +124,11 @@ findAll' sortWarehouses limit offset filters = runDb
                                 )
 
 transform' :: RawWarehouseStock -> WarehouseStock
-transform' warehouse = WarehouseStock (E.unValue id) 
-                                      (E.unValue name)
-                                      (fromSqlKey $ E.unValue userId) 
-                                      (fromMaybe 0 $ E.unValue stock)
-                          where (id, name, userId, stock) = warehouse
+transform' (id, name, userId, stock) = 
+        WarehouseStock (E.unValue id) 
+                       (E.unValue name)
+                       (fromSqlKey $ E.unValue userId) 
+                       (fromMaybe 0 $ E.unValue stock)
 
 transformAll' :: [RawWarehouseStock] -> [WarehouseStock]
 transformAll' = Prelude.map transform'
