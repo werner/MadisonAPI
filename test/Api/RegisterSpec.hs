@@ -2,6 +2,7 @@
 module Api.RegisterSpec (main, spec) where
 
 import qualified Data.ByteString.Char8            as C
+import           Data.Text                        as T
 import           SpecSupport
 import           Data.Monoid                      ((<>))
 
@@ -23,7 +24,7 @@ spec :: Spec
 spec = with appSpec $ do
     describe "/register" $ do
         it "Register" $ do
-          let user = RegisterUser "test@test.com"
+          let user = RegisterUser (T.pack "test@test.com")
                                   (Just "Test")
                                   (Just "Super Test")
                                   (Just "My Company")
@@ -32,14 +33,14 @@ spec = with appSpec $ do
           postJson (C.pack "/register") user `shouldRespondWith` 200
 
         it "Confirmates" $ do
-          let user = RegisterUser "test@test.com"
+          let user = RegisterUser (T.pack "test@test.com")
                                   (Just "Test")
                                   (Just "Super Test")
                                   (Just "My Company")
                                   "123456"
                                   "123456"
           postJson (C.pack "/register") user `shouldRespondWith` 200
-          token <- liftIO $ getTokenByEmail "test@test.com"
+          token <- liftIO $ getTokenByEmail $ T.pack "test@test.com"
           request  (C.pack "GET") (C.pack $ "/confirmation/test@test.com/" <> token) [] (encode "") `shouldRespondWith` 200
 
 type APISpec = Api.Register.API

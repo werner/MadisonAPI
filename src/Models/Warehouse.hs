@@ -4,7 +4,7 @@ module Models.Warehouse where
 
 import           GHC.Generics                     (Generic)
 import           Data.Maybe                       (fromMaybe)
-import           Data.Text                        as Text
+import           Data.Text
 import qualified Database.Esqueleto               as E
 import           Data.Int                         (Int64)
 import           Data.Aeson                       (ToJSON, FromJSON)
@@ -46,7 +46,12 @@ instance ToJSON   SortWarehouse
 instance FromJSON SortWarehouse
 
 instance FromHttpApiData SortWarehouse where
-        parseUrlPiece sortWarehouse = Right (read $ Text.unpack sortWarehouse :: SortWarehouse)
+        parseUrlPiece sortWarehouse = 
+            case (unpack sortWarehouse) of
+                "name-asc"  -> Right (SWarehouseName SAsc)
+                "name-desc" -> Right (SWarehouseName SDesc)
+                "id-asc"    -> Right (SWarehouseScopedId SAsc)
+                "id-desc"   -> Right (SWarehouseScopedId SDesc)
 
 instance ToHttpApiData SortWarehouse where
         toUrlPiece = showTextData
@@ -59,7 +64,7 @@ instance ToJSON   FilterWarehouse
 instance FromJSON FilterWarehouse
 
 instance FromHttpApiData FilterWarehouse where
-        parseUrlPiece filterWarehouse = Right (read $ Text.unpack filterWarehouse :: FilterWarehouse)
+        parseUrlPiece filterWarehouse = Right (read $ unpack filterWarehouse :: FilterWarehouse)
 
 instance ToHttpApiData FilterWarehouse where
         toUrlPiece = showTextData

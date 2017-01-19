@@ -6,6 +6,7 @@ module Api.WarehouseSpec (main, spec) where
 import qualified Data.ByteString.Char8            as C
 import           Data.ByteString                  (ByteString)
 import           Data.CaseInsensitive             as CI
+import           Data.Text                        as T
 
 import           Api.Warehouse
 import           Models.Base
@@ -17,8 +18,8 @@ type MadisonAuthReq = AuthenticateReq MadisonAuthProtect
 
 getAll       :: MadisonAuthReq -> [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> FilterWarehouse -> Manager -> BaseUrl -> ClientM [WarehouseStock]
 postInsert   :: MadisonAuthReq -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int
-putUpdate    :: MadisonAuthReq -> Int -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int
-deleteDelete :: MadisonAuthReq -> Int -> Manager -> BaseUrl -> ClientM Int
+putUpdate    :: MadisonAuthReq -> Int -> CrudWarehouse -> Manager -> BaseUrl -> ClientM ()
+deleteDelete :: MadisonAuthReq -> Int -> Manager -> BaseUrl -> ClientM ()
 getAll :<|> postInsert :<|> putUpdate :<|> deleteDelete = client apiSpec
 
 apiSpec :: Proxy Api.Warehouse.API
@@ -34,9 +35,9 @@ spec = with appSpec $ do
           liftIO $ createWarehouse "First"
           liftIO $ createWarehouse "Second"
           liftIO $ createWarehouse "Third"
-          request (C.pack "GET")  (C.pack "/warehouses?sortField=SWarehouseNameAsc&sortField=SWarehouseScopedIdAsc&limit=10&offset=0") 
+          request (C.pack "GET")  (C.pack "/warehouses?sortField=name-asc&sortField=id-asc&limit=10&offset=0") 
                   [(CI.mk (C.pack "Content-Type"), (C.pack "application/json")),
-                   (CI.mk (C.pack "madison-auth"),  (C.pack "key-test"))] 
+                   (CI.mk (C.pack "madison-auth"), (C.pack "key-test"))] 
                   (encode $ FilterWarehouse Nothing Nothing) `shouldRespondWith` 200  
 
         it "creates a warehouse" $ do
@@ -76,7 +77,7 @@ appSpec = do
 createWarehouse :: String -> IO (Entity Warehouse)
 createWarehouse name = do
         pool <- makePool Test
-        user <- runSqlPool (selectFirst [UserEmail ==. "logged_user@user.com"] []) pool
+        user <- runSqlPool (selectFirst [UserEmail ==. T.pack "logged_user@user.com"] []) pool
         runSqlPool (insert $ Warehouse name (entityKey $ getUserFromMaybe user) 1) pool
         warehouse <- runSqlPool (selectFirst [WarehouseName ==. name] []) pool
         case warehouse of

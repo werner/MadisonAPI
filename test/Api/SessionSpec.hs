@@ -4,6 +4,7 @@
 module Api.SessionSpec (main, spec) where
 
 import qualified Data.ByteString.Char8            as C
+import           Data.Text                        as T
 import           Data.ByteString                  (ByteString)
 import           Servant                          (Headers, Header)
 import           SpecSupport
@@ -26,8 +27,8 @@ spec :: Spec
 spec = with appSpec $ do
     describe "/login" $ do
         it "Log In" $ do
-          liftIO $ createUser "admin@admin.com"
-          postJson (C.pack "/login") (AuthUser "admin@admin.com" "123456") `shouldRespondWith` 200
+          liftIO $ createUser $ T.pack "admin@admin.com"
+          postJson (C.pack "/login") (AuthUser (T.pack "admin@admin.com") "123456") `shouldRespondWith` 200
 
 type APISpec = Api.Session.API
 

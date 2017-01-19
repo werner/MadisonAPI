@@ -90,7 +90,7 @@ setupDB = do
     pool <- makePool Test
     runSqlPool doMigrations pool
     runSqlPool wipeDB pool
-    loggedIn <- createUser  "logged_user@user.com"
+    loggedIn <- createUser $ T.pack "logged_user@user.com"
     runSqlPool (insert $ Session loggedIn "key-test") pool 
 
 postJson :: (ToJSON a) => ByteString -> a -> WaiSession SResponse
@@ -111,7 +111,7 @@ deleteJson path =
 authServerContextSpec :: Context (AuthHandler Request ShowUser ': '[])
 authServerContextSpec = authHandler :. EmptyContext
 
-createUser :: String -> IO (Key User)
+createUser :: Text -> IO (Key User)
 createUser email = do
         pool <- makePool Test
         let encryptPassword password = (fromMaybe $ C.pack "") <$> 
@@ -119,7 +119,7 @@ createUser email = do
         cryptPasswd <- encryptPassword "123456"
         runSqlPool (insert $ User email (C.unpack cryptPasswd) Nothing Nothing Nothing Nothing Nothing) pool
 
-getTokenByEmail :: String -> IO String
+getTokenByEmail :: Text -> IO String
 getTokenByEmail email = do
         pool <- makePool Test
         user <- runSqlPool (selectFirst [UserEmail ==. email] []) pool
