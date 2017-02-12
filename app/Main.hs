@@ -36,7 +36,7 @@ corsResourcePolicy = CorsResourcePolicy
   { corsOrigins        = Nothing
   , corsMethods        = [C.pack "GET",  C.pack "HEAD", C.pack "OPTIONS", 
                           C.pack "POST", C.pack "PUT",  C.pack "DELETE"]
-  , corsRequestHeaders = simpleResponseHeaders <> [CI.mk $ C.pack "Authorization"]
+  , corsRequestHeaders = simpleResponseHeaders <> [CI.mk $ C.pack "madison-auth"]
   , corsExposedHeaders = Nothing
   , corsMaxAge         = Nothing
   , corsVaryOrigin     = False
