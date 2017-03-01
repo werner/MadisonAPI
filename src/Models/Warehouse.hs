@@ -56,19 +56,6 @@ instance FromHttpApiData SortWarehouse where
 instance ToHttpApiData SortWarehouse where
         toUrlPiece = showTextData
 
-data FilterWarehouse = FilterWarehouse { filterName :: Maybe String 
-                                       , filterId   :: Maybe Int }
-                                       deriving (Show, Read, Generic)
-
-instance ToJSON   FilterWarehouse
-instance FromJSON FilterWarehouse
-
-instance FromHttpApiData FilterWarehouse where
-        parseUrlPiece filterWarehouse = Right (read $ unpack filterWarehouse :: FilterWarehouse)
-
-instance ToHttpApiData FilterWarehouse where
-        toUrlPiece = showTextData
-
 instance ToAudit Warehouse where
         type AuditResult Warehouse = WarehouseAudit
         toAudit v k auditAction editedBy editedOn = WarehouseAudit (warehouseName v) (warehouseUserId v)
@@ -99,22 +86,21 @@ allCondition  warehouses      = warehouses E.^. WarehouseName `E.ilike` (E.%) E.
 mapFilterWarehouse
   :: E.Esqueleto query expr backend 
   => expr (Entity Warehouse) 
-  -> FilterWarehouse 
+  -> Maybe String
+  -> Maybe Int
   -> query ()
-mapFilterWarehouse warehouses filter =
-       case filter of
-           (FilterWarehouse (Just name) Nothing)   -> E.where_ $ nameCondition warehouses name
-           (FilterWarehouse Nothing (Just id))     -> E.where_ $ idCondition warehouses id
-           (FilterWarehouse (Just name) (Just id)) -> E.where_ $ nameCondition warehouses name
-                                                               E.&&. idCondition warehouses id
-           (FilterWarehouse Nothing Nothing)       -> E.where_ $ allCondition warehouses
+mapFilterWarehouse warehouses (Just name) (Just id) = E.where_ $ nameCondition warehouses name
+                                                        E.&&. idCondition warehouses id
+mapFilterWarehouse warehouses Nothing (Just id)     = E.where_ $ idCondition warehouses id
+mapFilterWarehouse warehouses (Just name) Nothing   = E.where_ $ nameCondition warehouses name
+mapFilterWarehouse warehouses Nothing Nothing       = E.where_ $ allCondition warehouses
 
-findAll' :: [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> FilterWarehouse -> App [RawWarehouseStock]
-findAll' sortWarehouses limit offset filters = runDb 
+findAll' :: [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> Maybe String -> Maybe Int -> App [RawWarehouseStock]
+findAll' sortWarehouses limit offset filterName filterId = runDb 
                         $ E.select 
                         $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
                             E.on $ E.just (warehouses E.^. WarehouseId) E.==. stocks E.?. StockWarehouseId
-                            mapFilterWarehouse warehouses filters
+                            mapFilterWarehouse warehouses filterName filterId
                             E.orderBy $ Prelude.map (getSortField warehouses) sortWarehouses
                             E.groupBy (warehouses E.^. WarehouseId,
                                        warehouses E.^. WarehouseName,

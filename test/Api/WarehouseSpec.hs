@@ -16,7 +16,14 @@ import           SpecSupport
 
 type MadisonAuthReq = AuthenticateReq MadisonAuthProtect
 
-getAll       :: MadisonAuthReq -> [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> FilterWarehouse -> Manager -> BaseUrl -> ClientM [WarehouseStock]
+getAll       :: MadisonAuthReq -> [SortWarehouse] 
+                               -> Maybe Int64 
+                               -> Maybe Int64 
+                               -> Maybe String
+                               -> Maybe Int 
+                               -> Manager 
+                               -> BaseUrl 
+                               -> ClientM [WarehouseStock]
 postInsert   :: MadisonAuthReq -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int
 putUpdate    :: MadisonAuthReq -> Int -> CrudWarehouse -> Manager -> BaseUrl -> ClientM ()
 deleteDelete :: MadisonAuthReq -> Int -> Manager -> BaseUrl -> ClientM ()
@@ -35,10 +42,9 @@ spec = with appSpec $ do
           liftIO $ createWarehouse "First"
           liftIO $ createWarehouse "Second"
           liftIO $ createWarehouse "Third"
-          request (C.pack "GET")  (C.pack "/warehouses?sortField=name-asc&sortField=id-asc&limit=10&offset=0") 
+          (request (C.pack "GET")  (C.pack "/warehouses?sortField=name-asc&sortField=id-asc&limit=10&offset=0") 
                   [(CI.mk (C.pack "Content-Type"), (C.pack "application/json")),
-                   (CI.mk (C.pack "madison-auth"), (C.pack "key-test"))] 
-                  (encode $ FilterWarehouse Nothing Nothing) `shouldRespondWith` 200  
+                   (CI.mk (C.pack "madison-auth"), (C.pack "key-test"))] $ encode "") `shouldRespondWith` 200  
 
         it "creates a warehouse" $ do
           postJson (C.pack "/warehouses") (CrudWarehouse "Second") `shouldRespondWith` [json|2|]

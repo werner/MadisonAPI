@@ -33,26 +33,27 @@ import qualified Api.Register                     as Register
 
 type API = 
              "warehouses" :> MadisonAuthProtect 
-                          :> QueryParams "sortField" SortWarehouse
-                          :> QueryParam  "limit"     Int64 
-                          :> QueryParam  "offset"    Int64          
-                          :> ReqBody '[JSON] FilterWarehouse        :> Get    '[JSON] [WarehouseStock]
+                          :> QueryParams "sortField"  SortWarehouse
+                          :> QueryParam  "limit"      Int64 
+                          :> QueryParam  "offset"     Int64          
+                          :> QueryParam  "filterName" String
+                          :> QueryParam  "filterId"   Int            :> Get    '[JSON] [WarehouseStock]
         :<|> "warehouses" :> MadisonAuthProtect
-                          :> ReqBody '[JSON] CrudWarehouse          :> Post   '[JSON] Int
+                          :> ReqBody '[JSON] CrudWarehouse           :> Post   '[JSON] Int
         :<|> "warehouses" :> MadisonAuthProtect
                           :> Capture "id" Int
-                          :> ReqBody '[JSON] CrudWarehouse          :> Put    '[JSON] ()
+                          :> ReqBody '[JSON] CrudWarehouse           :> Put    '[JSON] ()
         :<|> "warehouses" :> MadisonAuthProtect
-                          :> Capture "id" Int                       :> Delete '[JSON] ()
+                          :> Capture "id" Int                        :> Delete '[JSON] ()
 
 server :: ServerT Api.Warehouse.API App
 server = all' :<|> insert' :<|> update' :<|> delete'
 
 all' :: MadisonAuthData 
      -> [SortWarehouse] 
-     -> Maybe Int64 -> Maybe Int64 -> FilterWarehouse
+     -> Maybe Int64 -> Maybe Int64 -> Maybe String -> Maybe Int
      -> App [WarehouseStock]
-all' session sortWarehouses limit offset filters = transformAll' <$> findAll' sortWarehouses limit offset filters
+all' session sortWarehouses limit offset filterName filterId = transformAll' <$> findAll' sortWarehouses limit offset filterName filterId
 
 insert' :: MadisonAuthData -> CrudWarehouse -> App Int
 insert' showUser crudWarehouse = do
