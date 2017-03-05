@@ -37,7 +37,7 @@ type API =
                           :> QueryParam  "limit"      Int64 
                           :> QueryParam  "offset"     Int64          
                           :> QueryParam  "filterName" String
-                          :> QueryParam  "filterId"   Int            :> Get    '[JSON] [WarehouseStock]
+                          :> QueryParam  "filterId"   Int            :> Get    '[JSON] [DataWarehouse]
         :<|> "warehouses" :> MadisonAuthProtect
                           :> ReqBody '[JSON] CrudWarehouse           :> Post   '[JSON] Int
         :<|> "warehouses" :> MadisonAuthProtect
@@ -52,7 +52,7 @@ server = all' :<|> insert' :<|> update' :<|> delete'
 all' :: MadisonAuthData 
      -> [SortWarehouse] 
      -> Maybe Int64 -> Maybe Int64 -> Maybe String -> Maybe Int
-     -> App [WarehouseStock]
+     -> App [DataWarehouse]
 all' session sortWarehouses limit offset filterName filterId = transformAll' <$> findAll' sortWarehouses limit offset filterName filterId
 
 insert' :: MadisonAuthData -> CrudWarehouse -> App Int

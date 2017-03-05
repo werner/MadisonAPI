@@ -18,20 +18,19 @@ import           Database.Persist.Audit.Class
 import           Models.Base
 import           Config
 
-type RawWarehouseStock = (E.Value Int, E.Value String, E.Value (Maybe Double))
+type RawWarehouse = (E.Value Int, E.Value String)
 
-data WarehouseStock 
-        = WarehouseStock 
+data DataWarehouse
+        = DataWarehouse
         { wId     :: Int
         , wName   :: String
-        , wStock  :: Double
         }
         deriving (Eq, Show, Read, Generic)
 
 data CrudWarehouse = CrudWarehouse { cwName :: String } deriving (Eq, Show, Read, Generic)
 
-instance ToJSON WarehouseStock
-instance FromJSON WarehouseStock
+instance ToJSON DataWarehouse
+instance FromJSON DataWarehouse
 
 instance ToJSON CrudWarehouse
 instance FromJSON CrudWarehouse
@@ -93,11 +92,10 @@ mapFilterWarehouse warehouses Nothing (Just id)     = E.where_ $ idCondition war
 mapFilterWarehouse warehouses (Just name) Nothing   = E.where_ $ nameCondition warehouses name
 mapFilterWarehouse warehouses Nothing Nothing       = E.where_ $ allCondition warehouses
 
-findAll' :: [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> Maybe String -> Maybe Int -> App [RawWarehouseStock]
+findAll' :: [SortWarehouse] -> Maybe Int64 -> Maybe Int64 -> Maybe String -> Maybe Int -> App [RawWarehouse]
 findAll' sortWarehouses limit offset filterName filterId = runDb 
                         $ E.select 
-                        $ E.from $ \(warehouses `E.LeftOuterJoin` stocks) -> do
-                            E.on $ E.just (warehouses E.^. WarehouseId) E.==. stocks E.?. StockWarehouseId
+                        $ E.from $ \warehouses -> do
                             mapFilterWarehouse warehouses filterName filterId
                             E.orderBy $ Prelude.map (getSortField warehouses) sortWarehouses
                             E.groupBy (warehouses E.^. WarehouseId,
@@ -107,15 +105,11 @@ findAll' sortWarehouses limit offset filterName filterId = runDb
                             E.offset $ fromMaybe 0  offset
                             return
                                 ( warehouses E.^. WarehouseScopedId
-                                , warehouses E.^. WarehouseName 
-                                , E.sum_ (stocks E.?. StockAmount)
-                                )
+                                , warehouses E.^. WarehouseName)
 
-transform' :: RawWarehouseStock -> WarehouseStock
-transform' (id, name, stock) = 
-        WarehouseStock (E.unValue id) 
-                       (E.unValue name)
-                       (fromMaybe 0 $ E.unValue stock)
+transform' :: RawWarehouse -> DataWarehouse
+transform' (id, name) = 
+        DataWarehouse (E.unValue id) (E.unValue name)
 
-transformAll' :: [RawWarehouseStock] -> [WarehouseStock]
+transformAll' :: [RawWarehouse] -> [DataWarehouse]
 transformAll' = Prelude.map transform'
