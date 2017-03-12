@@ -23,7 +23,7 @@ getAll       :: MadisonAuthReq -> [SortWarehouse]
                                -> Maybe Int 
                                -> Manager 
                                -> BaseUrl 
-                               -> ClientM [WarehouseStock]
+                               -> ClientM [DataWarehouse]
 postInsert   :: MadisonAuthReq -> CrudWarehouse -> Manager -> BaseUrl -> ClientM Int
 putUpdate    :: MadisonAuthReq -> Int -> CrudWarehouse -> Manager -> BaseUrl -> ClientM ()
 deleteDelete :: MadisonAuthReq -> Int -> Manager -> BaseUrl -> ClientM ()
