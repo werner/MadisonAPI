@@ -53,7 +53,8 @@ all' :: MadisonAuthData
      -> [SortWarehouse] 
      -> Maybe Int64 -> Maybe Int64 -> Maybe String -> Maybe Int
      -> App [DataWarehouse]
-all' session sortWarehouses limit offset filterName filterId = transformAll' <$> findAll' sortWarehouses limit offset filterName filterId
+all' session sortWarehouses limit offset filterName filterId = transformAll' <$>
+    findAll' sortWarehouses limit offset filterName filterId
 
 insert' :: MadisonAuthData -> CrudWarehouse -> App Int
 insert' showUser crudWarehouse = do

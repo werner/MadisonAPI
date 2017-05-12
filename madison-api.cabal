@@ -74,10 +74,10 @@ executable madison-api-exe
                      , wai
                      , wai-extra
                      , wai-cors
-                     , persistent            ==2.2.4.1
-                     , persistent-postgresql ==2.2.2
-                     , persistent-template   ==2.1.8.1
-                     , esqueleto             ==2.4.3
+                     , persistent
+                     , persistent-postgresql
+                     , persistent-template
+                     , esqueleto             
                      , warp
                      , safe
   default-language:    Haskell2010
@@ -94,11 +94,11 @@ test-suite madison-api-test
                      , hspec-wai
                      , hspec-wai-json
                      , aeson
-                     , persistent            ==2.2.4.1
-                     , persistent-postgresql ==2.2.2
-                     , persistent-sqlite     ==2.2.1
-                     , persistent-template   ==2.1.8.1
-                     , esqueleto             ==2.4.3
+                     , persistent
+                     , persistent-postgresql
+                     , persistent-sqlite
+                     , persistent-template
+                     , esqueleto             
                      , bytestring
                      , monad-logger
                      , transformers
